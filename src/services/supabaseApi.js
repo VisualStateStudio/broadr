@@ -11,6 +11,35 @@ export async function fetchClients() {
   return data
 }
 
+export async function insertClient(client) {
+  const { data, error } = await supabase
+    .from('clients')
+    .insert(client)
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function updateClient(id, updates) {
+  const { data, error } = await supabase
+    .from('clients')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function deleteClient(id) {
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function fetchAgencyClient() {
   const { data, error } = await supabase
     .from('clients')
