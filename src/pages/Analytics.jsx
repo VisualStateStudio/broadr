@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { DollarSign, TrendingUp, MousePointerClick, Eye } from 'lucide-react'
+import { DollarSign, TrendingUp, MousePointerClick, Eye, RefreshCw, CheckCircle } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell,
@@ -79,6 +79,8 @@ export default function Analytics() {
   const [raw,       setRaw]       = useState([])
   const [loading,   setLoading]   = useState(true)
   const [range,     setRange]     = useState(30)
+  const [syncing,   setSyncing]   = useState(false)
+  const [syncMsg,   setSyncMsg]   = useState('')
 
   useEffect(() => {
     async function load() {
@@ -136,6 +138,31 @@ export default function Analytics() {
 
   const hasData = raw.length > 0
 
+  const handleSync = useCallback(async () => {
+    setSyncing(true)
+    setSyncMsg('')
+    try {
+      const res  = await fetch('/.netlify/functions/meta-sync', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ days: range }),
+      })
+      const json = await res.json()
+      if (!json.ok) throw new Error(json.error)
+      setSyncMsg(`Synced ${json.campaigns} campaigns · ${json.records} records`)
+      // Reload analytics data
+      setLoading(true)
+      const { start, end } = dateRange(range)
+      setRaw(await fetchAnalytics(agency.id, start, end))
+    } catch (e) {
+      setSyncMsg('Sync failed: ' + e.message)
+    } finally {
+      setSyncing(false)
+      setLoading(false)
+      setTimeout(() => setSyncMsg(''), 5000)
+    }
+  }, [range, agency])
+
   return (
     <div style={{ padding: 0 }}>
       {/* Header */}
@@ -148,6 +175,30 @@ export default function Analytics() {
             {agency?.name ?? ''}
           </p>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Sync status */}
+          {syncMsg && (
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: syncMsg.startsWith('Sync failed') ? '#DC2626' : '#10B981', display: 'flex', alignItems: 'center', gap: 5 }}>
+              {!syncMsg.startsWith('Sync failed') && <CheckCircle size={13} />}
+              {syncMsg}
+            </span>
+          )}
+
+          {/* Sync button */}
+          <button onClick={handleSync} disabled={syncing} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+            borderRadius: 9, border: '1px solid #E5E7EB',
+            background: '#fff', cursor: syncing ? 'default' : 'pointer',
+            fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', fontWeight: 500,
+            color: syncing ? '#9CA3AF' : '#374151', transition: 'all 150ms ease',
+          }}
+            onMouseEnter={e => { if (!syncing) e.currentTarget.style.borderColor = '#FF5C00' }}
+            onMouseLeave={e => { if (!syncing) e.currentTarget.style.borderColor = '#E5E7EB' }}
+          >
+            <RefreshCw size={13} strokeWidth={2} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+            {syncing ? 'Syncing…' : 'Sync Meta'}
+          </button>
 
         {/* Range selector */}
         <div style={{ display: 'flex', gap: 4, background: '#F0F0F0', borderRadius: 10, padding: 4 }}>
@@ -167,6 +218,7 @@ export default function Analytics() {
               {r.label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
