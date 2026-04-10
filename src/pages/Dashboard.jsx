@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { DollarSign, TrendingUp, Zap, BarChart2, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { DollarSign, TrendingUp, Zap, BarChart2 } from 'lucide-react'
 import KPICard from '../components/ui/KPICard.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { fetchDashboardKPIs, fetchCampaigns, fetchAgencyClient } from '../services/supabaseApi.js'

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Search } from 'lucide-react'
 import Badge from '../components/ui/Badge.jsx'
@@ -121,11 +121,14 @@ export default function Campaigns() {
     }
   }
 
-  const filtered = campaigns.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === 'all' || c.status === filter || c.platform === filter
-    return matchSearch && matchFilter
-  })
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    return campaigns.filter(c => {
+      const matchSearch = c.name.toLowerCase().includes(q)
+      const matchFilter = filter === 'all' || c.status === filter || c.platform === filter
+      return matchSearch && matchFilter
+    })
+  }, [campaigns, search, filter])
 
   return (
     <div style={{ padding: 28, position: 'relative' }}>
