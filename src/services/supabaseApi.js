@@ -124,6 +124,20 @@ export async function upsertPerformance(record) {
   return data
 }
 
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+
+export async function fetchAnalytics(clientId, startDate, endDate) {
+  const { data, error } = await supabase
+    .from('campaign_performance')
+    .select('date, spend, impressions, clicks, conversions, revenue, campaigns!inner(client_id, name, platform)')
+    .eq('campaigns.client_id', clientId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true })
+  if (error) throw new Error(error.message)
+  return data
+}
+
 // ─── DASHBOARD KPIs ───────────────────────────────────────────────────────────
 
 export async function fetchDashboardKPIs(clientId) {
