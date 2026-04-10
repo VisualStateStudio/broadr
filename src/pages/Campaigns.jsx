@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Search } from 'lucide-react'
 import Badge from '../components/ui/Badge.jsx'
-import { fetchCampaigns, fetchAgencyClient, insertCampaign, updateCampaign, deleteCampaign } from '../services/supabaseApi.js'
+import { fetchCampaigns, fetchClients, insertCampaign, updateCampaign, deleteCampaign } from '../services/supabaseApi.js'
 
 const PLATFORMS   = ['meta', 'google', 'both']
 const STATUSES    = ['draft', 'active', 'paused', 'completed']
 const OBJECTIVES  = ['Brand Awareness', 'Lead Generation', 'Website Traffic', 'Conversions', 'Retargeting', 'Engagement']
 
 const EMPTY_FORM = {
-  name: '', platform: 'meta', status: 'draft',
+  client_id: '', name: '', platform: 'meta', status: 'draft',
   objective: '', daily_budget: '', total_budget: '',
   start_date: '', end_date: '', notes: '',
 }
@@ -33,7 +33,7 @@ const inputStyle = {
 }
 
 export default function Campaigns() {
-  const [agency,    setAgency]    = useState(null)
+  const [clients,   setClients]   = useState([])
   const [campaigns, setCampaigns] = useState([])
   const [loading,   setLoading]   = useState(true)
   const [search,    setSearch]    = useState('')
@@ -44,12 +44,14 @@ export default function Campaigns() {
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState(null)
 
+  const agency = useMemo(() => clients.find(c => c.is_agency), [clients])
+
   useEffect(() => {
     async function load() {
       try {
-        const ag = await fetchAgencyClient()
-        setAgency(ag)
-        setCampaigns(await fetchCampaigns(ag.id))
+        const [cl, ca] = await Promise.all([fetchClients(), fetchCampaigns()])
+        setClients(cl)
+        setCampaigns(ca)
       } catch (e) {
         console.error(e)
       } finally {
@@ -61,7 +63,7 @@ export default function Campaigns() {
 
   const openNew = () => {
     setEditing(null)
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, client_id: agency?.id ?? '' })
     setError(null)
     setShowForm(true)
   }
@@ -69,10 +71,16 @@ export default function Campaigns() {
   const openEdit = (c) => {
     setEditing(c)
     setForm({
-      name: c.name, platform: c.platform, status: c.status,
-      objective: c.objective ?? '', daily_budget: c.daily_budget ?? '',
-      total_budget: c.total_budget ?? '', start_date: c.start_date ?? '',
-      end_date: c.end_date ?? '', notes: c.notes ?? '',
+      client_id:    c.client_id,
+      name:         c.name,
+      platform:     c.platform,
+      status:       c.status,
+      objective:    c.objective     ?? '',
+      daily_budget: c.daily_budget  ?? '',
+      total_budget: c.total_budget  ?? '',
+      start_date:   c.start_date    ?? '',
+      end_date:     c.end_date      ?? '',
+      notes:        c.notes         ?? '',
     })
     setError(null)
     setShowForm(true)
@@ -81,26 +89,25 @@ export default function Campaigns() {
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
 
   const handleSave = useCallback(async () => {
-    if (!form.name.trim()) { setError('Campaign name is required'); return }
-    if (!agency) return
+    if (!form.name.trim())    { setError('Campaign name is required'); return }
+    if (!form.client_id)      { setError('Please select a client');    return }
     setSaving(true); setError(null)
     try {
       const payload = {
         ...form,
-        client_id:    agency.id,
         daily_budget: form.daily_budget ? Number(form.daily_budget) : null,
         total_budget: form.total_budget ? Number(form.total_budget) : null,
         start_date:   form.start_date || null,
-        end_date:     form.end_date || null,
-        objective:    form.objective || null,
-        notes:        form.notes || null,
+        end_date:     form.end_date   || null,
+        objective:    form.objective  || null,
+        notes:        form.notes      || null,
       }
       if (editing) {
         const updated = await updateCampaign(editing.id, payload)
-        setCampaigns(cs => cs.map(c => c.id === editing.id ? updated : c))
+        setCampaigns(cs => cs.map(c => c.id === editing.id ? { ...updated, clients: clients.find(cl => cl.id === updated.client_id) } : c))
       } else {
         const created = await insertCampaign(payload)
-        setCampaigns(cs => [created, ...cs])
+        setCampaigns(cs => [{ ...created, clients: clients.find(cl => cl.id === created.client_id) }, ...cs])
       }
       setShowForm(false)
     } catch (e) {
@@ -108,7 +115,7 @@ export default function Campaigns() {
     } finally {
       setSaving(false)
     }
-  }, [form, agency, editing])
+  }, [form, editing, clients])
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this campaign?')) return
@@ -138,16 +145,15 @@ export default function Campaigns() {
           <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>
             Campaigns
           </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#6B7280', margin: '4px 0 0' }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '4px 0 0' }}>
             {campaigns.length} total · {campaigns.filter(c => c.status === 'active').length} active
           </p>
         </div>
         <button onClick={openNew} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '9px 16px', borderRadius: 10, border: 'none',
-          background: '#FF5C00', color: '#fff', cursor: 'pointer',
-          fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-          transition: 'background 150ms ease',
+          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
+          borderRadius: 10, border: 'none', background: '#FF5C00', color: '#fff',
+          cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
+          fontWeight: 500, transition: 'background 150ms ease',
         }}
           onMouseEnter={e => e.currentTarget.style.background = '#E04E00'}
           onMouseLeave={e => e.currentTarget.style.background = '#FF5C00'}
@@ -161,16 +167,13 @@ export default function Campaigns() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 220px' }}>
           <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search campaigns…"
-            style={{ ...inputStyle, paddingLeft: 32 }}
-          />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search campaigns…"
+            style={{ ...inputStyle, paddingLeft: 32 }} />
         </div>
         {['all', 'active', 'paused', 'draft', 'meta', 'google'].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
-            padding: '8px 14px', borderRadius: 8, border: `1px solid ${filter === f ? '#FF5C00' : '#E5E7EB'}`,
+            padding: '8px 14px', borderRadius: 8,
+            border: `1px solid ${filter === f ? '#FF5C00' : '#E5E7EB'}`,
             background: filter === f ? '#FFF0E8' : '#fff', cursor: 'pointer',
             fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', fontWeight: 500,
             color: filter === f ? '#FF5C00' : '#374151', transition: 'all 150ms ease',
@@ -195,11 +198,8 @@ export default function Campaigns() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.map((c, i) => (
-            <motion.div
-              key={c.id}
-              className="glass-1"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
+            <motion.div key={c.id} className="glass-1"
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
               onClick={() => openEdit(c)}
@@ -207,21 +207,19 @@ export default function Campaigns() {
             >
               {/* Platform */}
               <div style={{ width: 44, height: 44, borderRadius: 10, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem', fontWeight: 700, color: c.platform === 'meta' ? '#FF5C00' : c.platform === 'google' ? '#DC2626' : '#9333EA' }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem', fontWeight: 700, color: c.platform === 'meta' ? '#2563EB' : c.platform === 'google' ? '#DC2626' : '#9333EA' }}>
                   {c.platform.toUpperCase().slice(0, 4)}
                 </span>
               </div>
 
-              {/* Name + objective */}
+              {/* Name + client */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.9375rem', fontWeight: 500, color: '#0F1117', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.name}
                 </div>
-                {c.objective && (
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF', marginTop: 2 }}>
-                    {c.objective}
-                  </div>
-                )}
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF', marginTop: 2 }}>
+                  {c.clients?.name ?? c.objective ?? '—'}
+                </div>
               </div>
 
               {/* Budget */}
@@ -231,10 +229,8 @@ export default function Campaigns() {
                 </div>
               )}
 
-              {/* Status */}
               <Badge label={c.status} variant={c.status} />
 
-              {/* Delete */}
               <button onClick={e => { e.stopPropagation(); handleDelete(c.id) }} style={{
                 display: 'flex', padding: 6, borderRadius: 6, border: 'none',
                 background: 'transparent', cursor: 'pointer', color: '#9CA3AF',
@@ -250,17 +246,14 @@ export default function Campaigns() {
         </div>
       )}
 
-      {/* Slide-in form panel */}
+      {/* Slide panel */}
       <AnimatePresence>
         {showForm && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.35)', zIndex: 40 }}
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              className="glass-3"
+              onClick={() => setShowForm(false)} />
+            <motion.div className="glass-3"
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 380, damping: 38 }}
               style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 420, zIndex: 50, padding: 28, overflowY: 'auto' }}
@@ -281,11 +274,21 @@ export default function Campaigns() {
               )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <Field label="Client">
+                  <select value={form.client_id} onChange={set('client_id')} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="">Select client</option>
+                    {clients.map(cl => (
+                      <option key={cl.id} value={cl.id}>
+                        {cl.name}{cl.is_agency ? ' (Agency)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
                 <Field label="Campaign Name">
                   <input value={form.name} onChange={set('name')} placeholder="e.g. Lead Gen — Spring 2026" style={inputStyle}
                     onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                    onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                  />
+                    onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                 </Field>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -312,14 +315,12 @@ export default function Campaigns() {
                   <Field label="Daily Budget ($)">
                     <input type="number" min="0" value={form.daily_budget} onChange={set('daily_budget')} placeholder="0.00" style={inputStyle}
                       onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                      onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                    />
+                      onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                   </Field>
                   <Field label="Total Budget ($)">
                     <input type="number" min="0" value={form.total_budget} onChange={set('total_budget')} placeholder="0.00" style={inputStyle}
                       onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                      onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                    />
+                      onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                   </Field>
                 </div>
 
@@ -333,10 +334,10 @@ export default function Campaigns() {
                 </div>
 
                 <Field label="Notes">
-                  <textarea value={form.notes} onChange={set('notes')} placeholder="Campaign notes…" rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+                  <textarea value={form.notes} onChange={set('notes')} placeholder="Campaign notes…" rows={3}
+                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
                     onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                    onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                  />
+                    onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
                 </Field>
               </div>
 
@@ -344,10 +345,8 @@ export default function Campaigns() {
                 <button onClick={() => setShowForm(false)} style={{
                   flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #E5E7EB',
                   background: '#fff', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.875rem', fontWeight: 500, color: '#374151', transition: 'background 150ms ease',
-                }}>
-                  Cancel
-                </button>
+                  fontSize: '0.875rem', fontWeight: 500, color: '#374151',
+                }}>Cancel</button>
                 <button onClick={handleSave} disabled={saving} style={{
                   flex: 2, padding: '10px', borderRadius: 10, border: 'none',
                   background: saving ? '#FFAD8A' : '#FF5C00', cursor: saving ? 'default' : 'pointer',
@@ -363,10 +362,8 @@ export default function Campaigns() {
                   width: '100%', marginTop: 10, padding: '9px', borderRadius: 10,
                   border: '1px solid rgba(220,38,38,0.2)', background: '#FEE2E2',
                   cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-                  fontWeight: 500, color: '#DC2626', transition: 'background 150ms ease',
-                }}>
-                  Delete Campaign
-                </button>
+                  fontWeight: 500, color: '#DC2626',
+                }}>Delete Campaign</button>
               )}
             </motion.div>
           </>

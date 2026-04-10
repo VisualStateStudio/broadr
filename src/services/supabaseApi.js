@@ -55,7 +55,7 @@ export async function fetchAgencyClient() {
 export async function fetchCampaigns(clientId) {
   let query = supabase
     .from('campaigns')
-    .select('*')
+    .select('*, clients(id, name)')
     .order('created_at', { ascending: false })
   if (clientId) query = query.eq('client_id', clientId)
   const { data, error } = await query
@@ -122,6 +122,60 @@ export async function upsertPerformance(record) {
     .single()
   if (error) throw new Error(error.message)
   return data
+}
+
+// ─── CREATIVE ASSETS ──────────────────────────────────────────────────────────
+
+export async function fetchCreativeAssets(clientId) {
+  let query = supabase
+    .from('creative_assets')
+    .select('*, campaigns(name)')
+    .order('created_at', { ascending: false })
+  if (clientId) query = query.eq('client_id', clientId)
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function insertCreativeAsset(asset) {
+  const { data, error } = await supabase
+    .from('creative_assets')
+    .insert(asset)
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function updateCreativeAsset(id, updates) {
+  const { data, error } = await supabase
+    .from('creative_assets')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function deleteCreativeAsset(id, fileUrl) {
+  if (fileUrl) {
+    const path = fileUrl.split('/storage/v1/object/public/creatives/')[1]
+    if (path) await supabase.storage.from('creatives').remove([decodeURIComponent(path)])
+  }
+  const { error } = await supabase.from('creative_assets').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function uploadCreativeFile(file, clientId) {
+  const ext  = file.name.split('.').pop().toLowerCase()
+  const path = `${clientId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+  const { error } = await supabase.storage
+    .from('creatives')
+    .upload(path, file, { cacheControl: '3600', upsert: false })
+  if (error) throw new Error(error.message)
+  const { data: { publicUrl } } = supabase.storage.from('creatives').getPublicUrl(path)
+  return publicUrl
 }
 
 // ─── ANALYTICS ────────────────────────────────────────────────────────────────

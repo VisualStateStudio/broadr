@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Search, Globe, Building2 } from 'lucide-react'
+import { Plus, X, Search, Globe, Building2, Instagram, Facebook, Mail, Phone, User, DollarSign } from 'lucide-react'
 import { fetchClients, insertClient, updateClient, deleteClient } from '../services/supabaseApi.js'
 
 const INDUSTRIES = [
@@ -9,7 +9,11 @@ const INDUSTRIES = [
   'Education', 'Entertainment', 'Construction', 'Other',
 ]
 
-const EMPTY_FORM = { name: '', industry: '', website: '', logo_url: '', notes: '' }
+const EMPTY_FORM = {
+  name: '', industry: '', website: '', notes: '',
+  contact_name: '', contact_email: '', phone: '',
+  instagram_handle: '', facebook_page: '', monthly_budget: '',
+}
 
 const inputStyle = {
   width: '100%', padding: '9px 12px', borderRadius: 8,
@@ -17,6 +21,9 @@ const inputStyle = {
   fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#0F1117',
   outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms ease',
 }
+
+const focusOrange = e => { e.target.style.borderColor = '#FF5C00' }
+const blurGrey    = e => { e.target.style.borderColor = '#E5E7EB' }
 
 function Field({ label, children }) {
   return (
@@ -29,18 +36,22 @@ function Field({ label, children }) {
   )
 }
 
+function SectionLabel({ children }) {
+  return (
+    <div style={{
+      fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.75rem', fontWeight: 600,
+      color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase',
+      paddingBottom: 8, borderBottom: '1px solid #F0F0F0', marginTop: 4,
+    }}>
+      {children}
+    </div>
+  )
+}
+
 function ClientAvatar({ name, size = 48 }) {
-  const initials = name
-    .split(' ')
-    .map(w => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-
-  // deterministic color from name
-  const colors = ['#FF5C00', '#10B981', '#8B5CF6', '#0EA5E9', '#F59E0B', '#EC4899']
-  const color  = colors[name.charCodeAt(0) % colors.length]
-
+  const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+  const colors   = ['#FF5C00', '#10B981', '#8B5CF6', '#0EA5E9', '#F59E0B', '#EC4899']
+  const color    = colors[name.charCodeAt(0) % colors.length]
   return (
     <div style={{
       width: size, height: size, borderRadius: 12,
@@ -52,6 +63,24 @@ function ClientAvatar({ name, size = 48 }) {
       </span>
     </div>
   )
+}
+
+function InfoRow({ icon: Icon, value, href }) {
+  if (!value) return null
+  const content = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <Icon size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />
+      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {value}
+      </span>
+    </div>
+  )
+  if (href) return (
+    <a href={href} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: 'none' }}>
+      {content}
+    </a>
+  )
+  return content
 }
 
 export default function Clients() {
@@ -71,21 +100,21 @@ export default function Clients() {
       .finally(() => setLoading(false))
   }, [])
 
-  const openNew = () => {
-    setEditing(null)
-    setForm(EMPTY_FORM)
-    setError(null)
-    setShowForm(true)
-  }
+  const openNew = () => { setEditing(null); setForm(EMPTY_FORM); setError(null); setShowForm(true) }
 
   const openEdit = (c) => {
     setEditing(c)
     setForm({
-      name:     c.name,
-      industry: c.industry ?? '',
-      website:  c.website  ?? '',
-      logo_url: c.logo_url ?? '',
-      notes:    c.notes    ?? '',
+      name:             c.name,
+      industry:         c.industry         ?? '',
+      website:          c.website          ?? '',
+      notes:            c.notes            ?? '',
+      contact_name:     c.contact_name     ?? '',
+      contact_email:    c.contact_email    ?? '',
+      phone:            c.phone            ?? '',
+      instagram_handle: c.instagram_handle ?? '',
+      facebook_page:    c.facebook_page    ?? '',
+      monthly_budget:   c.monthly_budget   ?? '',
     })
     setError(null)
     setShowForm(true)
@@ -98,11 +127,16 @@ export default function Clients() {
     setSaving(true); setError(null)
     try {
       const payload = {
-        name:     form.name.trim(),
-        industry: form.industry || null,
-        website:  form.website  || null,
-        logo_url: form.logo_url || null,
-        notes:    form.notes    || null,
+        name:             form.name.trim(),
+        industry:         form.industry         || null,
+        website:          form.website          || null,
+        notes:            form.notes            || null,
+        contact_name:     form.contact_name     || null,
+        contact_email:    form.contact_email    || null,
+        phone:            form.phone            || null,
+        instagram_handle: form.instagram_handle ? form.instagram_handle.replace(/^@/, '') : null,
+        facebook_page:    form.facebook_page    || null,
+        monthly_budget:   form.monthly_budget   ? Number(form.monthly_budget) : null,
       }
       if (editing) {
         const updated = await updateClient(editing.id, payload)
@@ -120,8 +154,7 @@ export default function Clients() {
   }, [form, editing])
 
   const handleDelete = async (id) => {
-    const client = clients.find(c => c.id === id)
-    if (client?.is_agency) { alert("Can't delete your agency client."); return }
+    if (clients.find(c => c.id === id)?.is_agency) { alert("Can't delete your agency client."); return }
     if (!window.confirm('Delete this client?')) return
     try {
       await deleteClient(id)
@@ -137,7 +170,6 @@ export default function Clients() {
     return clients.filter(c => c.name.toLowerCase().includes(q) || (c.industry ?? '').toLowerCase().includes(q))
   }, [clients, search])
 
-  // Agency client pinned to top
   const sorted = useMemo(() => [
     ...filtered.filter(c => c.is_agency),
     ...filtered.filter(c => !c.is_agency),
@@ -148,19 +180,16 @@ export default function Clients() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>
-            Clients
-          </h1>
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>Clients</h1>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '4px 0 0' }}>
             {clients.length} client{clients.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button onClick={openNew} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '9px 16px', borderRadius: 10, border: 'none',
-          background: '#FF5C00', color: '#fff', cursor: 'pointer',
-          fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-          transition: 'background 150ms ease',
+          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
+          borderRadius: 10, border: 'none', background: '#FF5C00', color: '#fff',
+          cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
+          fontWeight: 500, transition: 'background 150ms ease',
         }}
           onMouseEnter={e => e.currentTarget.style.background = '#E04E00'}
           onMouseLeave={e => e.currentTarget.style.background = '#FF5C00'}
@@ -173,18 +202,14 @@ export default function Clients() {
       {/* Search */}
       <div style={{ position: 'relative', maxWidth: 320, marginBottom: 24 }}>
         <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }} />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search clients…"
-          style={{ ...inputStyle, paddingLeft: 32 }}
-        />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients…"
+          style={{ ...inputStyle, paddingLeft: 32 }} />
       </div>
 
       {/* Grid */}
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-          {[0,1,2].map(i => <div key={i} className="shimmer" style={{ height: 130, borderRadius: 16 }} />)}
+          {[0,1,2].map(i => <div key={i} className="shimmer" style={{ height: 140, borderRadius: 16 }} />)}
         </div>
       ) : sorted.length === 0 ? (
         <div className="glass-1" style={{ padding: 48, textAlign: 'center' }}>
@@ -195,54 +220,48 @@ export default function Clients() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {sorted.map((c, i) => (
-            <motion.div
-              key={c.id}
-              className="glass-1"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+            <motion.div key={c.id} className="glass-1"
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               whileHover={{ y: -2, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)' }}
               onClick={() => openEdit(c)}
               style={{ padding: 20, cursor: 'pointer', position: 'relative' }}
             >
-              {/* Agency badge */}
               {c.is_agency && (
                 <div style={{
-                  position: 'absolute', top: 16, right: 16,
-                  padding: '2px 8px', borderRadius: 6,
+                  position: 'absolute', top: 16, right: 16, padding: '2px 8px', borderRadius: 6,
                   background: '#FFF0E8', border: '1px solid rgba(255,92,0,0.2)',
-                  fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem',
-                  fontWeight: 600, color: '#FF5C00', letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                }}>
-                  Agency
-                </div>
+                  fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem', fontWeight: 600,
+                  color: '#FF5C00', letterSpacing: '0.04em', textTransform: 'uppercase',
+                }}>Agency</div>
               )}
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
                 <ClientAvatar name={c.name} size={44} />
-                <div style={{ minWidth: 0 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.name}
                   </div>
                   {c.industry && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                       <Building2 size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>
-                        {c.industry}
-                      </span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>{c.industry}</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {c.website && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}
-                  onClick={e => { e.stopPropagation(); window.open(c.website.startsWith('http') ? c.website : `https://${c.website}`, '_blank') }}
-                >
-                  <Globe size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.website.replace(/^https?:\/\//, '')}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <InfoRow icon={Globe}     value={c.website      ? c.website.replace(/^https?:\/\//, '') : null} href={c.website} />
+                <InfoRow icon={Instagram} value={c.instagram_handle ? `@${c.instagram_handle}` : null} href={c.instagram_handle ? `https://instagram.com/${c.instagram_handle}` : null} />
+                <InfoRow icon={Mail}      value={c.contact_email} href={c.contact_email ? `mailto:${c.contact_email}` : null} />
+              </div>
+
+              {c.monthly_budget && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F0F0F0', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <DollarSign size={12} style={{ color: '#10B981' }} />
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', color: '#10B981', fontWeight: 500 }}>
+                    ${Number(c.monthly_budget).toLocaleString()}/mo budget
                   </span>
                 </div>
               )}
@@ -251,20 +270,17 @@ export default function Clients() {
         </div>
       )}
 
-      {/* Slide-in form panel */}
+      {/* Slide panel */}
       <AnimatePresence>
         {showForm && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.35)', zIndex: 40 }}
-              onClick={() => setShowForm(false)}
-            />
-            <motion.div
-              className="glass-3"
+              onClick={() => setShowForm(false)} />
+            <motion.div className="glass-3"
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 380, damping: 38 }}
-              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 420, zIndex: 50, padding: 28, overflowY: 'auto' }}
+              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 440, zIndex: 50, padding: 28, overflowY: 'auto' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.125rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>
@@ -281,33 +297,62 @@ export default function Clients() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <SectionLabel>Business</SectionLabel>
                 <Field label="Client Name">
-                  <input value={form.name} onChange={set('name')} placeholder="e.g. Visual State Studio" style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                    onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                  />
+                  <input value={form.name} onChange={set('name')} placeholder="e.g. Visual State Studio"
+                    style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
                 </Field>
-
                 <Field label="Industry">
                   <select value={form.industry} onChange={set('industry')} style={{ ...inputStyle, cursor: 'pointer' }}>
                     <option value="">Select industry</option>
                     {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                   </select>
                 </Field>
-
                 <Field label="Website">
-                  <input value={form.website} onChange={set('website')} placeholder="yoursite.com" style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                    onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                  />
+                  <input value={form.website} onChange={set('website')} placeholder="yoursite.com"
+                    style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
                 </Field>
 
-                <Field label="Notes">
-                  <textarea value={form.notes} onChange={set('notes')} placeholder="Any notes about this client…" rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
-                    onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                    onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-                  />
+                <SectionLabel>Social</SectionLabel>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <Field label="Instagram">
+                    <input value={form.instagram_handle} onChange={set('instagram_handle')} placeholder="@handle"
+                      style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
+                  </Field>
+                  <Field label="Facebook Page">
+                    <input value={form.facebook_page} onChange={set('facebook_page')} placeholder="page name"
+                      style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
+                  </Field>
+                </div>
+
+                <SectionLabel>Contact</SectionLabel>
+                <Field label="Contact Name">
+                  <input value={form.contact_name} onChange={set('contact_name')} placeholder="Full name"
+                    style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
+                </Field>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <Field label="Email">
+                    <input type="email" value={form.contact_email} onChange={set('contact_email')} placeholder="email@co.com"
+                      style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
+                  </Field>
+                  <Field label="Phone">
+                    <input value={form.phone} onChange={set('phone')} placeholder="+61 4xx xxx xxx"
+                      style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
+                  </Field>
+                </div>
+
+                <SectionLabel>Budget</SectionLabel>
+                <Field label="Monthly Ad Budget ($)">
+                  <input type="number" min="0" value={form.monthly_budget} onChange={set('monthly_budget')} placeholder="0"
+                    style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
+                </Field>
+
+                <SectionLabel>Notes</SectionLabel>
+                <Field label="">
+                  <textarea value={form.notes} onChange={set('notes')} placeholder="Any notes about this client…"
+                    rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+                    onFocus={focusOrange} onBlur={blurGrey} />
                 </Field>
               </div>
 
@@ -315,15 +360,13 @@ export default function Clients() {
                 <button onClick={() => setShowForm(false)} style={{
                   flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #E5E7EB',
                   background: '#fff', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.875rem', fontWeight: 500, color: '#374151', transition: 'background 150ms ease',
-                }}>
-                  Cancel
-                </button>
+                  fontSize: '0.875rem', fontWeight: 500, color: '#374151',
+                }}>Cancel</button>
                 <button onClick={handleSave} disabled={saving} style={{
                   flex: 2, padding: '10px', borderRadius: 10, border: 'none',
                   background: saving ? '#FFAD8A' : '#FF5C00', cursor: saving ? 'default' : 'pointer',
-                  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-                  color: '#fff', transition: 'background 150ms ease',
+                  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500, color: '#fff',
+                  transition: 'background 150ms ease',
                 }}>
                   {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Client'}
                 </button>
@@ -334,10 +377,8 @@ export default function Clients() {
                   width: '100%', marginTop: 10, padding: '9px', borderRadius: 10,
                   border: '1px solid rgba(220,38,38,0.2)', background: '#FEE2E2',
                   cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-                  fontWeight: 500, color: '#DC2626', transition: 'background 150ms ease',
-                }}>
-                  Delete Client
-                </button>
+                  fontWeight: 500, color: '#DC2626',
+                }}>Delete Client</button>
               )}
             </motion.div>
           </>
