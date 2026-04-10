@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Search, Globe, Building2, Instagram, Facebook, Mail, Phone, User, DollarSign } from 'lucide-react'
+import { Plus, X, Search, Globe, Building2, AtSign, Mail, Phone, DollarSign } from 'lucide-react'
 import { fetchClients, insertClient, updateClient, deleteClient } from '../services/supabaseApi.js'
 
 const INDUSTRIES = [
@@ -253,7 +253,7 @@ export default function Clients() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <InfoRow icon={Globe}     value={c.website      ? c.website.replace(/^https?:\/\//, '') : null} href={c.website} />
-                <InfoRow icon={Instagram} value={c.instagram_handle ? `@${c.instagram_handle}` : null} href={c.instagram_handle ? `https://instagram.com/${c.instagram_handle}` : null} />
+                <InfoRow icon={AtSign} value={c.instagram_handle ? `@${c.instagram_handle}` : null} href={c.instagram_handle ? `https://instagram.com/${c.instagram_handle}` : null} />
                 <InfoRow icon={Mail}      value={c.contact_email} href={c.contact_email ? `mailto:${c.contact_email}` : null} />
               </div>
 
@@ -316,11 +316,11 @@ export default function Clients() {
 
                 <SectionLabel>Social</SectionLabel>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <Field label="Instagram">
+                  <Field label="AtSign">
                     <input value={form.instagram_handle} onChange={set('instagram_handle')} placeholder="@handle"
                       style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
                   </Field>
-                  <Field label="Facebook Page">
+                  <Field label="Globe Page">
                     <input value={form.facebook_page} onChange={set('facebook_page')} placeholder="page name"
                       style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
                   </Field>
