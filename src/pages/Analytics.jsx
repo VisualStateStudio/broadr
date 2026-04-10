@@ -151,9 +151,11 @@ export default function Analytics() {
       if (!json.ok) throw new Error(json.error)
       setSyncMsg(`Synced ${json.campaigns} campaigns · ${json.records} records`)
       // Reload analytics data
-      setLoading(true)
-      const { start, end } = dateRange(range)
-      setRaw(await fetchAnalytics(agency.id, start, end))
+      if (agency?.id) {
+        setLoading(true)
+        const { start, end } = dateRange(range)
+        setRaw(await fetchAnalytics(agency.id, start, end))
+      }
     } catch (e) {
       setSyncMsg('Sync failed: ' + e.message)
     } finally {
