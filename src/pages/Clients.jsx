@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Search, Globe, Building2, AtSign, Mail, Phone, DollarSign } from 'lucide-react'
+import { Plus, X, Search, Globe, Building2, AtSign, Mail, DollarSign } from 'lucide-react'
 import { fetchClients, insertClient, updateClient, deleteClient } from '../services/supabaseApi.js'
+import { Field, inputStyle, focusOrange, blurGrey } from '../components/ui/FormField.jsx'
 
 const INDUSTRIES = [
   'Content & Marketing', 'E-commerce', 'Real Estate', 'Hospitality & Food',
@@ -13,27 +14,6 @@ const EMPTY_FORM = {
   name: '', industry: '', website: '', notes: '',
   contact_name: '', contact_email: '', phone: '',
   instagram_handle: '', facebook_page: '', monthly_budget: '',
-}
-
-const inputStyle = {
-  width: '100%', padding: '9px 12px', borderRadius: 8,
-  border: '1px solid #E5E7EB', background: '#FFFFFF',
-  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#0F1117',
-  outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms ease',
-}
-
-const focusOrange = e => { e.target.style.borderColor = '#FF5C00' }
-const blurGrey    = e => { e.target.style.borderColor = '#E5E7EB' }
-
-function Field({ label, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', fontWeight: 500, color: '#6B7280', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  )
 }
 
 function SectionLabel({ children }) {
@@ -316,11 +296,11 @@ export default function Clients() {
 
                 <SectionLabel>Social</SectionLabel>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <Field label="AtSign">
+                  <Field label="Instagram">
                     <input value={form.instagram_handle} onChange={set('instagram_handle')} placeholder="@handle"
                       style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
                   </Field>
-                  <Field label="Globe Page">
+                  <Field label="Facebook Page">
                     <input value={form.facebook_page} onChange={set('facebook_page')} placeholder="page name"
                       style={inputStyle} onFocus={focusOrange} onBlur={blurGrey} />
                   </Field>

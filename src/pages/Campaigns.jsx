@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Search } from 'lucide-react'
 import Badge from '../components/ui/Badge.jsx'
 import { fetchCampaigns, fetchClients, insertCampaign, updateCampaign, deleteCampaign } from '../services/supabaseApi.js'
+import { Field, inputStyle, focusOrange, blurGrey } from '../components/ui/FormField.jsx'
 
 const PLATFORMS   = ['meta', 'google', 'both']
 const STATUSES    = ['draft', 'active', 'paused', 'completed']
@@ -14,23 +15,6 @@ const EMPTY_FORM = {
   start_date: '', end_date: '', notes: '',
 }
 
-function Field({ label, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', fontWeight: 500, color: '#6B7280', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-const inputStyle = {
-  width: '100%', padding: '9px 12px', borderRadius: 8,
-  border: '1px solid #E5E7EB', background: '#FFFFFF',
-  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#0F1117',
-  outline: 'none', boxSizing: 'border-box', transition: 'border-color 150ms ease',
-}
 
 export default function Campaigns() {
   const [clients,   setClients]   = useState([])
@@ -314,13 +298,11 @@ export default function Campaigns() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <Field label="Daily Budget ($)">
                     <input type="number" min="0" value={form.daily_budget} onChange={set('daily_budget')} placeholder="0.00" style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                      onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
+                      onFocus={focusOrange} onBlur={blurGrey} />
                   </Field>
                   <Field label="Total Budget ($)">
                     <input type="number" min="0" value={form.total_budget} onChange={set('total_budget')} placeholder="0.00" style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = '#FF5C00'}
-                      onBlur={e => e.target.style.borderColor = '#E5E7EB'} />
+                      onFocus={focusOrange} onBlur={blurGrey} />
                   </Field>
                 </div>
 

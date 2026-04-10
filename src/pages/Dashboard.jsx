@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { DollarSign, TrendingUp, Zap, BarChart2 } from 'lucide-react'
+import { DollarSign, TrendingUp, Zap, BarChart2, ChevronDown } from 'lucide-react'
 import KPICard from '../components/ui/KPICard.jsx'
 import Badge from '../components/ui/Badge.jsx'
-import { fetchDashboardKPIs, fetchCampaigns, fetchAgencyClient } from '../services/supabaseApi.js'
+import { fetchDashboardKPIs, fetchCampaigns, fetchClients } from '../services/supabaseApi.js'
 
 const containerVariants = {
   hidden: {},
@@ -22,30 +22,38 @@ function PlatformIcon({ platform }) {
 }
 
 export default function Dashboard() {
-  const [agency,    setAgency]    = useState(null)
-  const [kpis,      setKpis]      = useState(null)
-  const [campaigns, setCampaigns] = useState([])
-  const [loading,   setLoading]   = useState(true)
+  const [clients,          setClients]          = useState([])
+  const [selectedClientId, setSelectedClientId] = useState(null)
+  const [kpis,             setKpis]             = useState(null)
+  const [campaigns,        setCampaigns]         = useState([])
+  const [loading,          setLoading]           = useState(true)
+  const [kpiLoading,       setKpiLoading]        = useState(false)
 
+  // Load all clients once; default to agency
   useEffect(() => {
-    async function load() {
-      try {
-        const ag = await fetchAgencyClient()
-        setAgency(ag)
-        const [k, c] = await Promise.all([
-          fetchDashboardKPIs(ag.id),
-          fetchCampaigns(ag.id),
-        ])
-        setKpis(k)
-        setCampaigns(c)
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    fetchClients()
+      .then(all => {
+        setClients(all)
+        const agency = all.find(c => c.is_agency) ?? all[0]
+        if (agency) setSelectedClientId(agency.id)
+      })
+      .catch(console.error)
   }, [])
+
+  // Re-fetch KPIs + campaigns whenever selected client changes
+  useEffect(() => {
+    if (!selectedClientId) return
+    setKpiLoading(true)
+    Promise.all([
+      fetchDashboardKPIs(selectedClientId),
+      fetchCampaigns(selectedClientId),
+    ])
+      .then(([k, c]) => { setKpis(k); setCampaigns(c) })
+      .catch(console.error)
+      .finally(() => { setKpiLoading(false); setLoading(false) })
+  }, [selectedClientId])
+
+  const selectedClient = clients.find(c => c.id === selectedClientId)
 
   const activeCampaigns = campaigns.filter(c => c.status === 'active')
   const recentCampaigns = campaigns.slice(0, 6)
@@ -53,16 +61,44 @@ export default function Dashboard() {
   return (
     <div style={{ padding: 0 }}>
       {/* Header */}
-      <div style={{ padding: '28px 28px 0', marginBottom: 4 }}>
-        <h1 style={{
-          fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem',
-          fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em',
-        }}>
-          {agency?.name ?? 'Dashboard'}
-        </h1>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#6B7280', margin: '4px 0 0' }}>
-          {new Date().toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' })}
-        </p>
+      <div style={{ padding: '28px 28px 0', marginBottom: 4, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem',
+            fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em',
+          }}>
+            {selectedClient?.name ?? 'Dashboard'}
+          </h1>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#6B7280', margin: '4px 0 0' }}>
+            {new Date().toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+
+        {clients.length > 1 && (
+          <div style={{ position: 'relative' }}>
+            <select
+              value={selectedClientId ?? ''}
+              onChange={e => setSelectedClientId(e.target.value)}
+              style={{
+                appearance: 'none', padding: '7px 32px 7px 12px',
+                borderRadius: 8, border: '1px solid #E5E7EB',
+                background: '#fff', cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
+                fontWeight: 500, color: '#374151', outline: 'none',
+                transition: 'border-color 150ms ease',
+              }}
+              onFocus={e => { e.target.style.borderColor = '#FF5C00' }}
+              onBlur={e => { e.target.style.borderColor = '#E5E7EB' }}
+            >
+              {clients.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.is_agency ? ' (Agency)' : ''}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }} />
+          </div>
+        )}
       </div>
 
       {/* Bento grid */}
@@ -80,7 +116,7 @@ export default function Dashboard() {
           decimals={0}
           icon={DollarSign}
           accentColor="#FF5C00"
-          loading={loading}
+          loading={loading || kpiLoading}
           colSpan={3}
         />
         <KPICard
@@ -89,7 +125,7 @@ export default function Dashboard() {
           decimals={0}
           icon={Zap}
           accentColor="#10B981"
-          loading={loading}
+          loading={loading || kpiLoading}
           colSpan={3}
         />
         <KPICard
@@ -98,7 +134,7 @@ export default function Dashboard() {
           decimals={0}
           icon={TrendingUp}
           accentColor="#8B5CF6"
-          loading={loading}
+          loading={loading || kpiLoading}
           colSpan={3}
         />
         <KPICard
@@ -108,7 +144,7 @@ export default function Dashboard() {
           decimals={2}
           icon={BarChart2}
           accentColor="#0EA5E9"
-          loading={loading}
+          loading={loading || kpiLoading}
           colSpan={3}
         />
 
