@@ -28,39 +28,39 @@ function CountUp({ value, prefix = '', suffix = '', decimals = 0 }) {
   return (
     <span ref={ref} style={{
       fontFamily: "'Space Grotesk', sans-serif",
-      fontSize: '2rem', fontWeight: 700,
-      color: '#0F1117', letterSpacing: '-0.02em', lineHeight: 1,
+      fontSize: '2.75rem', fontWeight: 700,
+      color: '#0F1117', letterSpacing: '-0.03em', lineHeight: 1,
     }}>
       {prefix}{typeof value === 'number' ? '0' : (value ?? '—')}{suffix}
     </span>
   )
 }
 
-export default function KPICard({ title, value, prefix, suffix, decimals, icon: Icon, accentColor = '#2563EB', loading, colSpan = 3 }) {
+export default function KPICard({ title, value, prefix, suffix, decimals, icon: Icon, accentColor = '#FF5C00', loading, colSpan = 3 }) {
   return (
     <motion.div
       className="glass-1"
-      style={{ gridColumn: `span ${colSpan}`, padding: 24, cursor: 'default', position: 'relative', overflow: 'hidden' }}
+      style={{ gridColumn: `span ${colSpan}`, padding: '20px 24px', cursor: 'default', position: 'relative', overflow: 'hidden' }}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -1, boxShadow: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 -1px 0 0 rgba(0,0,0,0.04) inset, 0 4px 6px -1px rgba(0,0,0,0.07), 0 12px 28px -4px rgba(0,0,0,0.11), 0 40px 80px -8px rgba(0,0,0,0.08)' }}
+      whileHover={{ y: -2, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)' }}
       transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      {/* Icon */}
+      {/* Top accent line */}
       <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: `${accentColor}14`,
-        border: `1px solid ${accentColor}30`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 16,
-      }}>
-        {Icon && <Icon size={16} style={{ color: accentColor }} strokeWidth={2} />}
+        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+        background: accentColor, borderRadius: '16px 16px 0 0',
+      }} />
+
+      {/* Icon */}
+      <div style={{ marginBottom: 14, marginTop: 4 }}>
+        {Icon && <Icon size={18} style={{ color: accentColor }} strokeWidth={2} />}
       </div>
 
       {/* Value */}
-      <div style={{ marginBottom: 6 }}>
+      <div style={{ marginBottom: 8 }}>
         {loading ? (
-          <div className="shimmer" style={{ width: 90, height: 32 }} />
+          <div className="shimmer" style={{ width: 100, height: 44 }} />
         ) : (
           <CountUp value={value} prefix={prefix} suffix={suffix} decimals={decimals} />
         )}
@@ -69,13 +69,10 @@ export default function KPICard({ title, value, prefix, suffix, decimals, icon: 
       {/* Label */}
       <div style={{
         fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem',
-        fontWeight: 500, color: '#6B7280', letterSpacing: '0.01em',
+        fontWeight: 500, color: '#9CA3AF', letterSpacing: '0.01em',
       }}>
         {title}
       </div>
-
-      {/* Accent bottom line */}
-      <div style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: 2, background: accentColor, borderRadius: '4px 4px 0 0', opacity: 0.5 }} />
     </motion.div>
   )
 }

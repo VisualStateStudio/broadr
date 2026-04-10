@@ -79,7 +79,7 @@ export default function Dashboard() {
           prefix="$"
           decimals={0}
           icon={DollarSign}
-          accentColor="#2563EB"
+          accentColor="#FF5C00"
           loading={loading}
           colSpan={3}
         />
@@ -88,7 +88,7 @@ export default function Dashboard() {
           value={kpis?.activeCampaigns}
           decimals={0}
           icon={Zap}
-          accentColor="#059669"
+          accentColor="#10B981"
           loading={loading}
           colSpan={3}
         />
@@ -97,7 +97,7 @@ export default function Dashboard() {
           value={kpis?.totalConversions}
           decimals={0}
           icon={TrendingUp}
-          accentColor="#D97706"
+          accentColor="#8B5CF6"
           loading={loading}
           colSpan={3}
         />
@@ -107,7 +107,7 @@ export default function Dashboard() {
           suffix="x"
           decimals={2}
           icon={BarChart2}
-          accentColor="#9333EA"
+          accentColor="#0EA5E9"
           loading={loading}
           colSpan={3}
         />
@@ -122,7 +122,7 @@ export default function Dashboard() {
             <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>
               Campaigns
             </h2>
-            <a href="/campaigns" style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#2563EB', textDecoration: 'none', fontWeight: 500 }}>
+            <a href="/campaigns" style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#FF5C00', textDecoration: 'none', fontWeight: 500 }}>
               View all →
             </a>
           </div>

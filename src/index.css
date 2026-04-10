@@ -14,7 +14,7 @@ html { font-size: 16px; }
 
 body {
   margin: 0;
-  background-color: #F5F6F8;
+  background-color: #F7F7F7;
   font-family: 'Inter', system-ui, sans-serif;
   color: #0F1117;
   -webkit-font-smoothing: antialiased;
@@ -28,76 +28,36 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   BACKGROUND — ambient bloom + grain texture
-══════════════════════════════════════════════════════ */
-
-.bg-bloom {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 800px 600px at 20% 10%, rgba(59,130,246,0.06) 0%, transparent 70%),
-    radial-gradient(ellipse 600px 500px at 80% 80%, rgba(14,165,233,0.05) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 400px at 55% 40%, rgba(20,184,166,0.04) 0%, transparent 70%);
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  background-size: 200px 200px;
-  opacity: 0.4;
-  mix-blend-mode: multiply;
-}
-
-/* ══════════════════════════════════════════════════════
-   GLASS SYSTEM
+   CARD SYSTEM
 ══════════════════════════════════════════════════════ */
 
 /* Tier 1 — Primary bento cards */
 .glass-1 {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 20px;
+  background: #FFFFFF;
+  border: 1px solid #EBEBEB;
+  border-radius: 16px;
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.04) inset,
-    0 4px 6px -1px rgba(0, 0, 0, 0.06),
-    0 10px 24px -4px rgba(0, 0, 0, 0.08),
-    0 32px 64px -8px rgba(0, 0, 0, 0.06);
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* Tier 2 — Nested containers */
 .glass-2 {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 14px;
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
-    0 2px 4px -1px rgba(0, 0, 0, 0.05),
-    0 6px 16px -4px rgba(0, 0, 0, 0.07);
+  background: #FAFAFA;
+  border: 1px solid #F0F0F0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-/* Tier 3 — Floating UI (modals, dropdowns, tooltips) */
+/* Tier 3 — Floating UI (modals, panels) */
 .glass-3 {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(32px) saturate(1.6) brightness(1.02);
-  -webkit-backdrop-filter: blur(32px) saturate(1.6) brightness(1.02);
-  border: 1px solid rgba(255, 255, 255, 0.95);
+  background: #FFFFFF;
+  border: 1px solid #E5E5E5;
   border-radius: 16px;
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 1.0) inset,
-    0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    0 8px 16px -4px rgba(0, 0, 0, 0.10),
-    0 20px 48px -8px rgba(0, 0, 0, 0.12);
+    0 4px 6px rgba(0, 0, 0, 0.04),
+    0 12px 32px rgba(0, 0, 0, 0.10),
+    0 32px 64px rgba(0, 0, 0, 0.08);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -130,7 +90,7 @@ body::before {
 }
 
 .shimmer {
-  background: linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%);
+  background: linear-gradient(90deg, #EEEEEE 25%, #F5F5F5 50%, #EEEEEE 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s linear infinite;
   border-radius: 8px;

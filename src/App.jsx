@@ -11,8 +11,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="bg-bloom" />
-        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
           <Sidebar />
           <main style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
             <Routes>

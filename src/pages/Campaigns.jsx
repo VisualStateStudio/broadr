@@ -145,12 +145,12 @@ export default function Campaigns() {
         <button onClick={openNew} style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '9px 16px', borderRadius: 10, border: 'none',
-          background: '#2563EB', color: '#fff', cursor: 'pointer',
+          background: '#FF5C00', color: '#fff', cursor: 'pointer',
           fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
           transition: 'background 150ms ease',
         }}
-          onMouseEnter={e => e.currentTarget.style.background = '#1D4ED8'}
-          onMouseLeave={e => e.currentTarget.style.background = '#2563EB'}
+          onMouseEnter={e => e.currentTarget.style.background = '#E04E00'}
+          onMouseLeave={e => e.currentTarget.style.background = '#FF5C00'}
         >
           <Plus size={15} strokeWidth={2.5} />
           New Campaign
@@ -170,10 +170,10 @@ export default function Campaigns() {
         </div>
         {['all', 'active', 'paused', 'draft', 'meta', 'google'].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
-            padding: '8px 14px', borderRadius: 8, border: `1px solid ${filter === f ? '#2563EB' : '#E5E7EB'}`,
-            background: filter === f ? '#DBEAFE' : '#fff', cursor: 'pointer',
+            padding: '8px 14px', borderRadius: 8, border: `1px solid ${filter === f ? '#FF5C00' : '#E5E7EB'}`,
+            background: filter === f ? '#FFF0E8' : '#fff', cursor: 'pointer',
             fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', fontWeight: 500,
-            color: filter === f ? '#2563EB' : '#374151', transition: 'all 150ms ease',
+            color: filter === f ? '#FF5C00' : '#374151', transition: 'all 150ms ease',
             textTransform: 'capitalize',
           }}>
             {f === 'all' ? 'All' : f}
@@ -207,7 +207,7 @@ export default function Campaigns() {
             >
               {/* Platform */}
               <div style={{ width: 44, height: 44, borderRadius: 10, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem', fontWeight: 700, color: c.platform === 'meta' ? '#2563EB' : c.platform === 'google' ? '#DC2626' : '#9333EA' }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem', fontWeight: 700, color: c.platform === 'meta' ? '#FF5C00' : c.platform === 'google' ? '#DC2626' : '#9333EA' }}>
                   {c.platform.toUpperCase().slice(0, 4)}
                 </span>
               </div>
@@ -283,7 +283,7 @@ export default function Campaigns() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <Field label="Campaign Name">
                   <input value={form.name} onChange={set('name')} placeholder="e.g. Lead Gen — Spring 2026" style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#2563EB'}
+                    onFocus={e => e.target.style.borderColor = '#FF5C00'}
                     onBlur={e => e.target.style.borderColor = '#E5E7EB'}
                   />
                 </Field>
@@ -311,13 +311,13 @@ export default function Campaigns() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <Field label="Daily Budget ($)">
                     <input type="number" min="0" value={form.daily_budget} onChange={set('daily_budget')} placeholder="0.00" style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = '#2563EB'}
+                      onFocus={e => e.target.style.borderColor = '#FF5C00'}
                       onBlur={e => e.target.style.borderColor = '#E5E7EB'}
                     />
                   </Field>
                   <Field label="Total Budget ($)">
                     <input type="number" min="0" value={form.total_budget} onChange={set('total_budget')} placeholder="0.00" style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = '#2563EB'}
+                      onFocus={e => e.target.style.borderColor = '#FF5C00'}
                       onBlur={e => e.target.style.borderColor = '#E5E7EB'}
                     />
                   </Field>
@@ -334,7 +334,7 @@ export default function Campaigns() {
 
                 <Field label="Notes">
                   <textarea value={form.notes} onChange={set('notes')} placeholder="Campaign notes…" rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
-                    onFocus={e => e.target.style.borderColor = '#2563EB'}
+                    onFocus={e => e.target.style.borderColor = '#FF5C00'}
                     onBlur={e => e.target.style.borderColor = '#E5E7EB'}
                   />
                 </Field>
@@ -350,7 +350,7 @@ export default function Campaigns() {
                 </button>
                 <button onClick={handleSave} disabled={saving} style={{
                   flex: 2, padding: '10px', borderRadius: 10, border: 'none',
-                  background: saving ? '#93C5FD' : '#2563EB', cursor: saving ? 'default' : 'pointer',
+                  background: saving ? '#FFAD8A' : '#FF5C00', cursor: saving ? 'default' : 'pointer',
                   fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
                   color: '#fff', transition: 'background 150ms ease',
                 }}>
