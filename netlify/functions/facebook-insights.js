@@ -8,16 +8,16 @@ exports.handler = async (event) => {
   const until = Math.floor(Date.now() / 1000)
   const since = until - days * 86400
 
+  const pageId = process.env.META_PAGE_ID
+  if (!pageId) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_PAGE_ID not set — add your Facebook Page ID to Netlify environment variables' }) }
+  }
+
   try {
-    // 1. Get Facebook Page (fan_count = total page likes)
-    const accountsRes  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,fan_count&access_token=${token}`)
-    const accountsJson = await accountsRes.json()
-    if (accountsJson.error) throw new Error(accountsJson.error.message)
-
-    const page = accountsJson.data?.[0]
-    if (!page) throw new Error('No Facebook Page found on this access token')
-
-    const pageId = page.id
+    // 1. Get Facebook Page details (fan_count = total page likes)
+    const pageRes  = await fetch(`https://graph.facebook.com/v19.0/${pageId}?fields=id,name,fan_count&access_token=${token}`)
+    const page     = await pageRes.json()
+    if (page.error) throw new Error(page.error.message)
 
     // 2. Daily Page insights
     const metrics      = 'page_impressions,page_reach,page_engaged_users,page_fan_adds_unique'

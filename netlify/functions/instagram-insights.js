@@ -8,17 +8,19 @@ exports.handler = async (event) => {
   const until = Math.floor(Date.now() / 1000)
   const since = until - days * 86400
 
+  const pageId = process.env.META_PAGE_ID
+  if (!pageId) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_PAGE_ID not set — add your Facebook Page ID to Netlify environment variables' }) }
+  }
+
   try {
-    // 1. Discover Facebook Page + linked Instagram Business Account
-    const accountsRes  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account&access_token=${token}`)
-    const accountsJson = await accountsRes.json()
-    if (accountsJson.error) throw new Error(accountsJson.error.message)
+    // 1. Get Instagram Business Account ID from the Page
+    const pageRes  = await fetch(`https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${token}`)
+    const pageJson = await pageRes.json()
+    if (pageJson.error) throw new Error(pageJson.error.message)
 
-    const page = accountsJson.data?.[0]
-    if (!page) throw new Error('No Facebook Page found on this access token')
-
-    const igId = page.instagram_business_account?.id
-    if (!igId) throw new Error('No Instagram Business Account linked to this Facebook Page')
+    const igId = pageJson.instagram_business_account?.id
+    if (!igId) throw new Error('No Instagram Business Account linked to this Facebook Page — make sure your Instagram is connected in Meta Business Suite')
 
     // 2. Profile (followers)
     const profileRes  = await fetch(`https://graph.facebook.com/v19.0/${igId}?fields=followers_count,username&access_token=${token}`)
