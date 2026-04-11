@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   DollarSign, TrendingUp, MousePointerClick, Eye, RefreshCw, CheckCircle,
-  Users, Heart, MessageCircle, Globe, Bookmark, BarChart2,
+  Users, Heart, MessageCircle, Globe, BarChart2,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -60,7 +60,6 @@ function dateRange(days) {
 }
 
 function fmt(n)      { return Number(n).toLocaleString() }
-function fmtPct(n)   { return `${Number(n).toFixed(2)}%` }
 function fmtDate(d)  { return new Date(d).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }) }
 function fmtShort(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -358,10 +357,10 @@ function InstagramTab({ range }) {
 
   return (
     <motion.div className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
-      <KPICard title="Followers"       value={hasData ? data.followers      : undefined} decimals={0} icon={Users}          accentColor="#E1306C" loading={false} colSpan={3} />
-      <KPICard title="Reach"           value={hasData ? data.reach          : undefined} decimals={0} icon={Eye}            accentColor="#FF5C00" loading={false} colSpan={3} />
-      <KPICard title="Impressions"     value={hasData ? data.impressions    : undefined} decimals={0} icon={TrendingUp}     accentColor="#8B5CF6" loading={false} colSpan={3} />
-      <KPICard title="Engagement Rate" value={hasData ? data.engagementRate : undefined} suffix="%"  decimals={2} icon={Heart} accentColor="#10B981" loading={false} colSpan={3} />
+      <KPICard title="Followers"     value={hasData ? data.followers    : undefined} decimals={0} icon={Users}      accentColor="#E1306C" loading={false} colSpan={3} />
+      <KPICard title="Reach"         value={hasData ? data.reach        : undefined} decimals={0} icon={Eye}        accentColor="#FF5C00" loading={false} colSpan={3} />
+      <KPICard title="Interactions"  value={hasData ? data.interactions : undefined} decimals={0} icon={Heart}      accentColor="#8B5CF6" loading={false} colSpan={3} />
+      <KPICard title="Engaged Accts" value={hasData ? data.engaged      : undefined} decimals={0} icon={TrendingUp} accentColor="#10B981" loading={false} colSpan={3} />
 
       {/* Sync */}
       <motion.div variants={cardVariants} style={{ gridColumn: 'span 12', display: 'flex', justifyContent: 'flex-end' }}>
@@ -389,14 +388,14 @@ function InstagramTab({ range }) {
                   <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmtShort} width={48} />
                   <Tooltip content={<CustomTooltip decimals={0} />} />
-                  <Line type="monotone" dataKey="reach"       stroke="#E1306C" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Reach" />
-                  <Line type="monotone" dataKey="impressions" stroke="#8B5CF6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Impressions" strokeDasharray="4 2" />
+                  <Line type="monotone" dataKey="reach"              stroke="#E1306C" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Reach" />
+                  <Line type="monotone" dataKey="accounts_engaged"  stroke="#8B5CF6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Engaged" strokeDasharray="4 2" />
                 </LineChart>
               </ResponsiveContainer>
             )}
             {/* Legend */}
             <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-              {[{ color: '#E1306C', label: 'Reach' }, { color: '#8B5CF6', label: 'Impressions' }].map(l => (
+              {[{ color: '#E1306C', label: 'Reach' }, { color: '#8B5CF6', label: 'Engaged' }].map(l => (
                 <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: l.color }} />
                   <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#6B7280' }}>{l.label}</span>
