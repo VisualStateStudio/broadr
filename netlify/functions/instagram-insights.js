@@ -72,14 +72,62 @@ exports.handler = async (event) => {
     const mediaJson = await mediaRes.json()
     if (mediaJson.error) throw new Error(mediaJson.error.message)
 
-    const posts = (mediaJson.data ?? []).map(p => ({
-      id:        p.id,
-      caption:   p.caption ? p.caption.slice(0, 80) : '',
-      type:      p.media_type,
-      url:       p.media_type === 'VIDEO' ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
-      timestamp: p.timestamp,
-      likes:     p.like_count     ?? 0,
-      comments:  p.comments_count ?? 0,
+    const rawPosts = mediaJson.data ?? []
+
+    // 4b. Fetch per-post insights in parallel.
+    //     impressions, reach, saved — valid for all media types.
+    //     video_views — only valid for VIDEO and REEL; fetched separately to avoid errors on IMAGE/CAROUSEL_ALBUM.
+    const postInsights = await Promise.all(rawPosts.map(async (p) => {
+      let impressions = 0, reach = 0, saved = 0, videoViews = 0
+
+      // Base metrics valid for all types
+      try {
+        const r = await fetch(
+          `https://graph.facebook.com/v19.0/${p.id}/insights` +
+          `?metric=impressions,reach,saved&access_token=${token}`
+        )
+        const j = await r.json()
+        if (!j.error) {
+          for (const item of j.data ?? []) {
+            if (item.name === 'impressions') impressions = item.values?.[0]?.value ?? 0
+            if (item.name === 'reach')       reach       = item.values?.[0]?.value ?? 0
+            if (item.name === 'saved')       saved       = item.values?.[0]?.value ?? 0
+          }
+        }
+      } catch (_) { /* non-fatal */ }
+
+      // video_views only for VIDEO and REEL
+      if (p.media_type === 'VIDEO' || p.media_type === 'REEL') {
+        try {
+          const r = await fetch(
+            `https://graph.facebook.com/v19.0/${p.id}/insights` +
+            `?metric=video_views&access_token=${token}`
+          )
+          const j = await r.json()
+          if (!j.error) {
+            const vv = (j.data ?? []).find(item => item.name === 'video_views')
+            videoViews = vv?.values?.[0]?.value ?? 0
+          }
+        } catch (_) { /* non-fatal */ }
+      }
+
+      return { id: p.id, impressions, reach, saved, videoViews }
+    }))
+
+    // Index insights by post id for easy lookup
+    const insightsById = Object.fromEntries(postInsights.map(i => [i.id, i]))
+
+    const posts = rawPosts.map(p => ({
+      id:          p.id,
+      caption:     p.caption ? p.caption.slice(0, 80) : '',
+      type:        p.media_type,
+      url:         p.media_type === 'VIDEO' ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
+      timestamp:   p.timestamp,
+      likes:       p.like_count     ?? 0,
+      comments:    p.comments_count ?? 0,
+      impressions: insightsById[p.id]?.impressions ?? 0,
+      saved:       insightsById[p.id]?.saved       ?? 0,
+      videoViews:  insightsById[p.id]?.videoViews  ?? 0,
     }))
 
     return {

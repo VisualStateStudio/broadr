@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   DollarSign, TrendingUp, MousePointerClick, Eye, RefreshCw, CheckCircle,
-  Users, Heart, MessageCircle, Globe, BarChart2,
+  Users, Heart, MessageCircle, Globe, BarChart2, Bookmark, Video, ImageIcon, Layers,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -345,6 +345,30 @@ function AdsTab({ agency, range }) {
 
 // ─── Tab content: Instagram ───────────────────────────────────────────────────
 
+const IG_TYPE_CONFIG = {
+  IMAGE:          { label: 'Image',    color: '#E1306C', icon: ImageIcon },
+  VIDEO:          { label: 'Video',    color: '#FF5C00', icon: Video     },
+  REEL:           { label: 'Reel',     color: '#FF5C00', icon: Video     },
+  CAROUSEL_ALBUM: { label: 'Carousel', color: '#8B5CF6', icon: Layers    },
+}
+
+function IgTypePill({ type }) {
+  const cfg = IG_TYPE_CONFIG[type] ?? { label: type, color: '#9CA3AF', icon: ImageIcon }
+  const Icon = cfg.icon
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '2px 8px', borderRadius: 20,
+      background: cfg.color + '15', border: `1px solid ${cfg.color}30`,
+      fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem', fontWeight: 500,
+      color: cfg.color, whiteSpace: 'nowrap',
+    }}>
+      <Icon size={10} strokeWidth={2.5} />
+      {cfg.label}
+    </span>
+  )
+}
+
 function InstagramTab({ range }) {
   const [data,    setData]    = useState(() => loadCache(`broadr_ig_${range}`))
   const [syncing, setSyncing] = useState(false)
@@ -379,6 +403,31 @@ function InstagramTab({ range }) {
     (data?.daily ?? []).map(d => ({ ...d, dateLabel: fmtDate(d.date) }))
   , [data])
 
+  // Post-level aggregates
+  const postStats = useMemo(() => {
+    const posts = data?.posts ?? []
+    const totalLikes    = posts.reduce((s, p) => s + (p.likes    ?? 0), 0)
+    const totalComments = posts.reduce((s, p) => s + (p.comments ?? 0), 0)
+
+    // Peak reach day from daily series
+    let peakReachDay = null, peakReachVal = 0
+    for (const d of data?.daily ?? []) {
+      if ((d.reach ?? 0) > peakReachVal) {
+        peakReachVal = d.reach
+        peakReachDay = d.date
+      }
+    }
+
+    // Type breakdown counts
+    const typeCounts = {}
+    for (const p of posts) {
+      const t = p.type ?? 'IMAGE'
+      typeCounts[t] = (typeCounts[t] ?? 0) + 1
+    }
+
+    return { totalLikes, totalComments, peakReachDay, peakReachVal, typeCounts }
+  }, [data])
+
   const hasData = !!data
 
   return (
@@ -389,18 +438,13 @@ function InstagramTab({ range }) {
       <KPICard title="Engaged Accts" value={hasData ? data.engaged      : undefined} decimals={0} icon={TrendingUp} accentColor="#10B981" loading={false} colSpan={3} />
 
       {/* Sync */}
-      <motion.div variants={cardVariants} style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+      <motion.div variants={cardVariants} style={{ gridColumn: 'span 12', display: 'flex', justifyContent: 'flex-end' }}>
         <SyncBar syncing={syncing} msg={msg} onSync={handleSync} label="Sync Instagram" />
-        {range > 30 && (
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF' }}>
-            Instagram insights are limited to 30 days by the Meta API
-          </span>
-        )}
       </motion.div>
 
       {!hasData ? <NoDataState onSync={handleSync} syncing={syncing} /> : (
         <>
-          {/* Reach vs Impressions chart */}
+          {/* Reach chart */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 8', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Reach & Impressions</h2>
@@ -419,12 +463,11 @@ function InstagramTab({ range }) {
                   <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmtShort} width={48} />
                   <Tooltip content={<CustomTooltip decimals={0} />} />
-                  <Line type="monotone" dataKey="reach"              stroke="#E1306C" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Reach" />
-                  <Line type="monotone" dataKey="accounts_engaged"  stroke="#8B5CF6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Engaged" strokeDasharray="4 2" />
+                  <Line type="monotone" dataKey="reach"           stroke="#E1306C" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Reach" />
+                  <Line type="monotone" dataKey="accounts_engaged" stroke="#8B5CF6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Engaged" strokeDasharray="4 2" />
                 </LineChart>
               </ResponsiveContainer>
             )}
-            {/* Legend */}
             <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
               {[{ color: '#E1306C', label: 'Reach' }, { color: '#8B5CF6', label: 'Engaged' }].map(l => (
                 <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -435,7 +478,7 @@ function InstagramTab({ range }) {
             </div>
           </motion.div>
 
-          {/* Profile views + engagement totals stat panel */}
+          {/* Profile views stat panel */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 4', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Profile Views</h2>
@@ -466,68 +509,135 @@ function InstagramTab({ range }) {
             </div>
           </motion.div>
 
-          {/* Top posts grid */}
+          {/* Post stat callouts */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 12', padding: 24 }}>
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 20px' }}>Recent Posts</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#F0F0F0', borderRadius: 12, overflow: 'hidden' }}>
+              {[
+                { label: 'Total Likes',    value: fmt(postStats.totalLikes),    color: '#E1306C' },
+                { label: 'Total Comments', value: fmt(postStats.totalComments),  color: '#8B5CF6' },
+                {
+                  label: 'Peak Reach Day',
+                  value: postStats.peakReachDay
+                    ? fmtShort(postStats.peakReachVal)
+                    : '—',
+                  sub: postStats.peakReachDay
+                    ? fmtDate(postStats.peakReachDay)
+                    : null,
+                  color: '#FF5C00',
+                },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: '#FFFFFF', padding: '20px 24px' }}>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF', marginBottom: 6 }}>{stat.label}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.75rem', fontWeight: 700, color: stat.color, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    {stat.value}
+                  </div>
+                  {stat.sub && (
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF', marginTop: 4 }}>{stat.sub}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Recent posts engagement table */}
+          <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 12', padding: 24 }}>
+            {/* Card header with title + type breakdown pills */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>Recent Posts</h2>
+              {data.posts?.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {Object.entries(postStats.typeCounts).map(([type, count]) => {
+                    const cfg = IG_TYPE_CONFIG[type] ?? { label: type, color: '#9CA3AF' }
+                    return (
+                      <span key={type} style={{
+                        padding: '3px 10px', borderRadius: 20,
+                        background: cfg.color + '15', border: `1px solid ${cfg.color}30`,
+                        fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', fontWeight: 500,
+                        color: cfg.color,
+                      }}>
+                        {count} {cfg.label}{count !== 1 ? 's' : ''}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             {data.posts?.length === 0 ? (
               <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', textAlign: 'center', padding: '24px 0' }}>No posts found</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
-                {data.posts.map(post => (
-                  <IgPostCard key={post.id} post={post} />
-                ))}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #F0F0F0' }}>
+                      {['Post', 'Type', 'Likes', 'Comments', 'Saves', 'Reach'].map(h => (
+                        <th key={h} style={{
+                          padding: '0 12px 10px', textAlign: h === 'Post' ? 'left' : 'right',
+                          fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem', fontWeight: 600,
+                          color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em',
+                          whiteSpace: 'nowrap',
+                        }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.posts.map((post, i) => {
+                      const isVideo = post.type === 'VIDEO' || post.type === 'REEL'
+                      const reachCol = isVideo && post.videoViews > 0 ? post.videoViews : post.impressions
+                      const reachLabel = isVideo && post.videoViews > 0 ? 'Views' : 'Impr.'
+                      return (
+                        <tr key={post.id} style={{ borderBottom: i < data.posts.length - 1 ? '1px solid #F9F9F9' : 'none' }}>
+                          {/* Thumbnail + caption */}
+                          <td style={{ padding: '10px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#F0F0F0' }}>
+                                {post.url ? (
+                                  <img src={post.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
+                                ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Eye size={14} style={{ color: '#D1D5DB' }} strokeWidth={1.5} />
+                                  </div>
+                                )}
+                              </div>
+                              <span style={{
+                                fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#374151',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                maxWidth: 320,
+                              }}>
+                                {post.caption || '(No caption)'}
+                              </span>
+                            </div>
+                          </td>
+                          {/* Type pill */}
+                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                            <IgTypePill type={post.type} />
+                          </td>
+                          {/* Numeric cols */}
+                          {[post.likes, post.comments, post.saved ?? 0].map((v, ci) => (
+                            <td key={ci} style={{ padding: '10px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', color: '#374151' }}>
+                              {fmt(v)}
+                            </td>
+                          ))}
+                          {/* Reach / Views col with dynamic label */}
+                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', color: '#374151' }}>
+                              {fmt(reachCol)}
+                            </span>
+                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem', color: '#9CA3AF', marginLeft: 4 }}>
+                              {reachLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </motion.div>
         </>
       )}
     </motion.div>
-  )
-}
-
-function IgPostCard({ post }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div
-      style={{ borderRadius: 12, overflow: 'hidden', background: '#F7F7F7', position: 'relative', cursor: 'pointer' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={{ aspectRatio: '1/1', background: '#F0F0F0' }}>
-        {post.url ? (
-          <img src={post.url} alt={post.caption || 'Post'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.display = 'none' }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Eye size={24} style={{ color: '#D1D5DB' }} strokeWidth={1.5} />
-          </div>
-        )}
-      </div>
-      {/* Hover overlay */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'rgba(15,17,23,0.6)',
-        opacity: hovered ? 1 : 0,
-        transition: 'opacity 200ms ease',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fff' }}>
-          <Heart size={14} fill="currentColor" />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', fontWeight: 600 }}>{fmt(post.likes)}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#fff' }}>
-          <MessageCircle size={14} fill="currentColor" />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8125rem', fontWeight: 600 }}>{fmt(post.comments)}</span>
-        </div>
-      </div>
-      {/* Caption */}
-      {post.caption && (
-        <div style={{ padding: '8px 10px' }}>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#6B7280', margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-            {post.caption}
-          </p>
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -758,9 +868,9 @@ export default function Analytics() {
             </p>
           </div>
 
-          {/* Range selector */}
+          {/* Range selector — hide 90d on Instagram tab (API cap is 30d) */}
           <div style={{ display: 'flex', gap: 4, background: '#F0F0F0', borderRadius: 10, padding: 4 }}>
-            {RANGES.map(r => (
+            {RANGES.filter(r => !(activeTab === 'instagram' && r.days === 90)).map(r => (
               <button
                 key={r.days}
                 onClick={() => setRange(r.days)}
