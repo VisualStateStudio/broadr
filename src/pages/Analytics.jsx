@@ -389,8 +389,13 @@ function InstagramTab({ range }) {
       <KPICard title="Engaged Accts" value={hasData ? data.engaged      : undefined} decimals={0} icon={TrendingUp} accentColor="#10B981" loading={false} colSpan={3} />
 
       {/* Sync */}
-      <motion.div variants={cardVariants} style={{ gridColumn: 'span 12', display: 'flex', justifyContent: 'flex-end' }}>
+      <motion.div variants={cardVariants} style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
         <SyncBar syncing={syncing} msg={msg} onSync={handleSync} label="Sync Instagram" />
+        {range > 30 && (
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF' }}>
+            Instagram insights are limited to 30 days by the Meta API
+          </span>
+        )}
       </motion.div>
 
       {!hasData ? <NoDataState onSync={handleSync} syncing={syncing} /> : (

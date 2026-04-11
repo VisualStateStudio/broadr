@@ -9,7 +9,7 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_PAGE_ID not set' }) }
   }
 
-  const days  = parseInt(event.queryStringParameters?.days ?? '30', 10)
+  const days  = Math.min(parseInt(event.queryStringParameters?.days ?? '30', 10), 30)
   const until = Math.floor(Date.now() / 1000)
   const since = until - days * 86400
 
