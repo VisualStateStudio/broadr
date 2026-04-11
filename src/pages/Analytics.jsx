@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   DollarSign, TrendingUp, MousePointerClick, Eye, RefreshCw, CheckCircle,
@@ -45,6 +45,23 @@ const slideVariants = {
   enter:  (dir) => ({ x: dir > 0 ? 32 : -32, opacity: 0 }),
   center: { x: 0, opacity: 1, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } },
   exit:   (dir) => ({ x: dir > 0 ? -32 : 32, opacity: 0, transition: { duration: 0.18 } }),
+}
+
+// ─── Cache helpers ────────────────────────────────────────────────────────────
+
+const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+
+function loadCache(key) {
+  try {
+    const s = localStorage.getItem(key)
+    if (!s) return null
+    const { payload, ts } = JSON.parse(s)
+    return Date.now() - ts < CACHE_TTL ? payload : null
+  } catch { return null }
+}
+
+function saveCache(key, payload) {
+  try { localStorage.setItem(key, JSON.stringify({ payload, ts: Date.now() })) } catch {}
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -329,9 +346,17 @@ function AdsTab({ agency, range }) {
 // ─── Tab content: Instagram ───────────────────────────────────────────────────
 
 function InstagramTab({ range }) {
-  const [data,    setData]    = useState(null)
+  const [data,    setData]    = useState(() => loadCache(`broadr_ig_${range}`))
   const [syncing, setSyncing] = useState(false)
   const [msg,     setMsg]     = useState('')
+  const prevRange             = useRef(range)
+
+  // When range changes: load from cache for the new range, or clear to show NoDataState
+  useEffect(() => {
+    if (prevRange.current === range) return
+    prevRange.current = range
+    setData(loadCache(`broadr_ig_${range}`))
+  }, [range])
 
   const handleSync = useCallback(async () => {
     setSyncing(true); setMsg('')
@@ -340,6 +365,7 @@ function InstagramTab({ range }) {
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setData(json)
+      saveCache(`broadr_ig_${range}`, json)
       setMsg('Synced successfully')
     } catch (e) {
       setMsg('Sync failed: ' + e.message)
@@ -404,29 +430,35 @@ function InstagramTab({ range }) {
             </div>
           </motion.div>
 
-          {/* Profile views */}
+          {/* Profile views + engagement totals stat panel */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 4', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Profile Views</h2>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Daily — last {range} days</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Total — last {range} days</span>
             </div>
-            {dailySeries.length === 0 ? <EmptyChart height={200} /> : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={dailySeries} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="igViewsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#FF5C00" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="#FF5C00" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmtShort} width={40} />
-                  <Tooltip content={<CustomTooltip decimals={0} />} />
-                  <Area type="monotone" dataKey="profile_views" stroke="#FF5C00" strokeWidth={2} fill="url(#igViewsGrad)" dot={false} activeDot={{ r: 4, fill: '#FF5C00' }} name="Profile Views" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 170 }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '3rem', fontWeight: 700, color: '#0F1117', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {fmtShort(data.profileViews ?? 0)}
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF', marginTop: 8 }}>
+                profile views
+              </div>
+              <div style={{ display: 'flex', gap: 28, marginTop: 28 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.375rem', fontWeight: 600, color: '#8B5CF6' }}>
+                    {fmtShort(data.interactions ?? 0)}
+                  </div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF', marginTop: 3 }}>interactions</div>
+                </div>
+                <div style={{ width: 1, background: '#F0F0F0' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.375rem', fontWeight: 600, color: '#10B981' }}>
+                    {fmtShort(data.engaged ?? 0)}
+                  </div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF', marginTop: 3 }}>engaged</div>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
           {/* Top posts grid */}
@@ -497,9 +529,17 @@ function IgPostCard({ post }) {
 // ─── Tab content: Facebook ────────────────────────────────────────────────────
 
 function FacebookTab({ range }) {
-  const [data,    setData]    = useState(null)
+  const [data,    setData]    = useState(() => loadCache(`broadr_fb_${range}`))
   const [syncing, setSyncing] = useState(false)
   const [msg,     setMsg]     = useState('')
+  const prevRange             = useRef(range)
+
+  // When range changes: load from cache for the new range, or clear to show NoDataState
+  useEffect(() => {
+    if (prevRange.current === range) return
+    prevRange.current = range
+    setData(loadCache(`broadr_fb_${range}`))
+  }, [range])
 
   const handleSync = useCallback(async () => {
     setSyncing(true); setMsg('')
@@ -508,6 +548,7 @@ function FacebookTab({ range }) {
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setData(json)
+      saveCache(`broadr_fb_${range}`, json)
       setMsg('Synced successfully')
     } catch (e) {
       setMsg('Sync failed: ' + e.message)
