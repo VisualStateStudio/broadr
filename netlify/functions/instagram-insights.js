@@ -46,10 +46,11 @@ exports.handler = async (event) => {
     const daily    = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
     const totalReach = daily.reduce((s, d) => s + (d.reach ?? 0), 0)
 
-    // 3b. Aggregate KPI totals — these metrics require metric_type=total_value
+    // 3b. Aggregate KPI totals — requires both period=total_value and metric_type=total_value
     const totalsRes  = await fetch(
       `https://graph.facebook.com/v19.0/${igId}/insights` +
       `?metric=profile_views,accounts_engaged,total_interactions` +
+      `&period=total_value` +
       `&metric_type=total_value` +
       `&since=${since}&until=${until}` +
       `&access_token=${token}`
