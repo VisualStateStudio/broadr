@@ -1,7 +1,7 @@
 exports.handler = async (event) => {
-  const token = process.env.META_ACCESS_TOKEN
+  const token = process.env.META_SOCIAL_TOKEN
   if (!token) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_ACCESS_TOKEN not set' }) }
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_SOCIAL_TOKEN not set' }) }
   }
 
   const days  = parseInt(event.queryStringParameters?.days ?? '30', 10)
