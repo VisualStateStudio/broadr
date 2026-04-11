@@ -80,7 +80,7 @@ exports.handler = async (event) => {
     }
   } catch (e) {
     return {
-      statusCode: 200,
+      statusCode: 500,
       headers:    { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ok: false, error: e.message }),
     }

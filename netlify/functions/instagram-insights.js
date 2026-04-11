@@ -4,14 +4,14 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_SOCIAL_TOKEN not set' }) }
   }
 
+  const pageId = process.env.META_PAGE_ID
+  if (!pageId) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_PAGE_ID not set' }) }
+  }
+
   const days  = parseInt(event.queryStringParameters?.days ?? '30', 10)
   const until = Math.floor(Date.now() / 1000)
   const since = until - days * 86400
-
-  const pageId = process.env.META_PAGE_ID
-  if (!pageId) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'META_PAGE_ID not set — add your Facebook Page ID to Netlify environment variables' }) }
-  }
 
   try {
     // 1. Get Instagram Business Account ID from the Page
@@ -20,40 +20,49 @@ exports.handler = async (event) => {
     if (pageJson.error) throw new Error(pageJson.error.message)
 
     const igId = pageJson.instagram_business_account?.id
-    if (!igId) throw new Error('No Instagram Business Account linked to this Facebook Page — make sure your Instagram is connected in Meta Business Suite')
+    if (!igId) throw new Error('No Instagram Business Account linked to this Facebook Page')
 
-    // 2. Profile (followers)
-    const profileRes  = await fetch(`https://graph.facebook.com/v19.0/${igId}?fields=followers_count,username&access_token=${token}`)
-    const profile     = await profileRes.json()
+    // 2. Profile — follower count
+    const profileRes = await fetch(`https://graph.facebook.com/v19.0/${igId}?fields=followers_count&access_token=${token}`)
+    const profile    = await profileRes.json()
     if (profile.error) throw new Error(profile.error.message)
 
-    // 3. Daily insights — reach, profile_views, accounts_engaged, total_interactions
-    const insightsRes  = await fetch(
+    // 3a. Daily reach for the chart (period=day supported for reach)
+    const reachRes  = await fetch(
       `https://graph.facebook.com/v19.0/${igId}/insights` +
-      `?metric=reach,profile_views,accounts_engaged,total_interactions` +
+      `?metric=reach` +
       `&period=day&since=${since}&until=${until}` +
       `&access_token=${token}`
     )
-    const insightsJson = await insightsRes.json()
-    if (insightsJson.error) throw new Error(insightsJson.error.message)
+    const reachJson = await reachRes.json()
+    if (reachJson.error) throw new Error(reachJson.error.message)
 
-    // Build daily map keyed by date string
     const dailyMap = {}
-    for (const metric of insightsJson.data ?? []) {
-      for (const point of metric.values) {
-        const date = point.end_time.slice(0, 10)
-        if (!dailyMap[date]) dailyMap[date] = { date, reach: 0, profile_views: 0, accounts_engaged: 0, total_interactions: 0 }
-        dailyMap[date][metric.name] = point.value
-      }
+    const reachMetric = (reachJson.data ?? []).find(m => m.name === 'reach')
+    for (const point of reachMetric?.values ?? []) {
+      const date = point.end_time.slice(0, 10)
+      dailyMap[date] = { date, reach: point.value }
     }
-    const daily = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
+    const daily    = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
+    const totalReach = daily.reduce((s, d) => s + (d.reach ?? 0), 0)
 
-    const totalReach         = daily.reduce((s, d) => s + (d.reach               ?? 0), 0)
-    const totalProfileViews  = daily.reduce((s, d) => s + (d.profile_views       ?? 0), 0)
-    const totalEngaged       = daily.reduce((s, d) => s + (d.accounts_engaged    ?? 0), 0)
-    const totalInteractions  = daily.reduce((s, d) => s + (d.total_interactions  ?? 0), 0)
+    // 3b. Aggregate KPI totals — these metrics require metric_type=total_value
+    const totalsRes  = await fetch(
+      `https://graph.facebook.com/v19.0/${igId}/insights` +
+      `?metric=profile_views,accounts_engaged,total_interactions` +
+      `&metric_type=total_value` +
+      `&since=${since}&until=${until}` +
+      `&access_token=${token}`
+    )
+    const totalsJson = await totalsRes.json()
+    if (totalsJson.error) throw new Error(totalsJson.error.message)
 
-    // 4. Recent 9 posts (likes + comments available directly on media)
+    const totalsMap = {}
+    for (const item of totalsJson.data ?? []) {
+      totalsMap[item.name] = item.total_value?.value ?? 0
+    }
+
+    // 4. Recent 9 posts
     const mediaRes  = await fetch(
       `https://graph.facebook.com/v19.0/${igId}/media` +
       `?fields=id,caption,media_type,thumbnail_url,media_url,timestamp,like_count,comments_count` +
@@ -63,13 +72,13 @@ exports.handler = async (event) => {
     if (mediaJson.error) throw new Error(mediaJson.error.message)
 
     const posts = (mediaJson.data ?? []).map(p => ({
-      id:        p.id,
-      caption:   p.caption ? p.caption.slice(0, 80) : '',
-      type:      p.media_type,
-      url:       p.media_type === 'VIDEO' ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
+      id:       p.id,
+      caption:  p.caption ? p.caption.slice(0, 80) : '',
+      type:     p.media_type,
+      url:      p.media_type === 'VIDEO' ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
       timestamp: p.timestamp,
-      likes:     p.like_count    ?? 0,
-      comments:  p.comments_count ?? 0,
+      likes:    p.like_count     ?? 0,
+      comments: p.comments_count ?? 0,
     }))
 
     return {
@@ -77,18 +86,18 @@ exports.handler = async (event) => {
       headers:    { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ok:           true,
-        followers:    profile.followers_count ?? 0,
+        followers:    profile.followers_count          ?? 0,
         reach:        totalReach,
-        profileViews: totalProfileViews,
-        engaged:      totalEngaged,
-        interactions: totalInteractions,
+        profileViews: totalsMap.profile_views          ?? 0,
+        engaged:      totalsMap.accounts_engaged       ?? 0,
+        interactions: totalsMap.total_interactions     ?? 0,
         daily,
         posts,
       }),
     }
   } catch (e) {
     return {
-      statusCode: 200,
+      statusCode: 500,
       headers:    { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ok: false, error: e.message }),
     }
