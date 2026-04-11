@@ -27,41 +27,48 @@ exports.handler = async (event) => {
     const profile    = await profileRes.json()
     if (profile.error) throw new Error(profile.error.message)
 
-    // 3a. Daily reach for the chart (period=day supported for reach)
-    const reachRes  = await fetch(
+    // 3a. Daily reach + profile_views (classic metrics, period=day no metric_type)
+    const dailyRes  = await fetch(
       `https://graph.facebook.com/v19.0/${igId}/insights` +
-      `?metric=reach` +
+      `?metric=reach,profile_views` +
       `&period=day&since=${since}&until=${until}` +
       `&access_token=${token}`
     )
-    const reachJson = await reachRes.json()
-    if (reachJson.error) throw new Error(reachJson.error.message)
+    const dailyJson = await dailyRes.json()
+    if (dailyJson.error) throw new Error(dailyJson.error.message)
 
     const dailyMap = {}
-    const reachMetric = (reachJson.data ?? []).find(m => m.name === 'reach')
-    for (const point of reachMetric?.values ?? []) {
-      const date = point.end_time.slice(0, 10)
-      dailyMap[date] = { date, reach: point.value }
+    for (const metric of dailyJson.data ?? []) {
+      for (const point of metric.values ?? []) {
+        const date = point.end_time.slice(0, 10)
+        if (!dailyMap[date]) dailyMap[date] = { date, reach: 0, profile_views: 0 }
+        dailyMap[date][metric.name] = (dailyMap[date][metric.name] ?? 0) + (point.value ?? 0)
+      }
     }
-    const daily    = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
-    const totalReach = daily.reduce((s, d) => s + (d.reach ?? 0), 0)
+    const daily        = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
+    const totalReach   = daily.reduce((s, d) => s + (d.reach         ?? 0), 0)
+    const totalPViews  = daily.reduce((s, d) => s + (d.profile_views ?? 0), 0)
 
-    // 3b. Aggregate KPI totals — metric_type=total_value + period=total_over_range required together
-    const totalsRes  = await fetch(
+    // 3b. Engagement metrics — fetched separately with metric_type=total_value + period=day
+    //     (accounts_engaged & total_interactions require metric_type=total_value)
+    let totalEngaged = 0
+    let totalInteractions = 0
+    const engRes  = await fetch(
       `https://graph.facebook.com/v19.0/${igId}/insights` +
-      `?metric=profile_views,accounts_engaged,total_interactions` +
+      `?metric=accounts_engaged,total_interactions` +
       `&metric_type=total_value` +
-      `&period=lifetime` +
-      `&since=${since}&until=${until}` +
+      `&period=day&since=${since}&until=${until}` +
       `&access_token=${token}`
     )
-    const totalsJson = await totalsRes.json()
-    if (totalsJson.error) throw new Error(totalsJson.error.message)
-
-    const totalsMap = {}
-    for (const item of totalsJson.data ?? []) {
-      // metric_type=total_value returns total_value.value, not values[]
-      totalsMap[item.name] = item.total_value?.value ?? item.values?.[0]?.value ?? 0
+    const engJson = await engRes.json()
+    if (!engJson.error) {
+      for (const item of engJson.data ?? []) {
+        // metric_type=total_value may return total_value.value or values[] depending on API version
+        const val = item.total_value?.value
+          ?? (item.values ?? []).reduce((s, v) => s + (v.value ?? 0), 0)
+        if (item.name === 'accounts_engaged')  totalEngaged      = val
+        if (item.name === 'total_interactions') totalInteractions = val
+      }
     }
 
     // 4. Recent 9 posts
@@ -74,13 +81,13 @@ exports.handler = async (event) => {
     if (mediaJson.error) throw new Error(mediaJson.error.message)
 
     const posts = (mediaJson.data ?? []).map(p => ({
-      id:       p.id,
-      caption:  p.caption ? p.caption.slice(0, 80) : '',
-      type:     p.media_type,
-      url:      p.media_type === 'VIDEO' ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
+      id:        p.id,
+      caption:   p.caption ? p.caption.slice(0, 80) : '',
+      type:      p.media_type,
+      url:       p.media_type === 'VIDEO' ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
       timestamp: p.timestamp,
-      likes:    p.like_count     ?? 0,
-      comments: p.comments_count ?? 0,
+      likes:     p.like_count     ?? 0,
+      comments:  p.comments_count ?? 0,
     }))
 
     return {
@@ -88,11 +95,11 @@ exports.handler = async (event) => {
       headers:    { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ok:           true,
-        followers:    profile.followers_count          ?? 0,
+        followers:    profile.followers_count ?? 0,
         reach:        totalReach,
-        profileViews: totalsMap.profile_views          ?? 0,
-        engaged:      totalsMap.accounts_engaged       ?? 0,
-        interactions: totalsMap.total_interactions     ?? 0,
+        profileViews: totalPViews,
+        engaged:      totalEngaged,
+        interactions: totalInteractions,
         daily,
         posts,
       }),
