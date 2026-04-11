@@ -46,10 +46,11 @@ exports.handler = async (event) => {
     const daily    = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
     const totalReach = daily.reduce((s, d) => s + (d.reach ?? 0), 0)
 
-    // 3b. Aggregate KPI totals — period=total_over_range gives one value for the whole window
+    // 3b. Aggregate KPI totals — metric_type=total_value + period=total_over_range required together
     const totalsRes  = await fetch(
       `https://graph.facebook.com/v19.0/${igId}/insights` +
       `?metric=profile_views,accounts_engaged,total_interactions` +
+      `&metric_type=total_value` +
       `&period=total_over_range` +
       `&since=${since}&until=${until}` +
       `&access_token=${token}`
@@ -59,7 +60,8 @@ exports.handler = async (event) => {
 
     const totalsMap = {}
     for (const item of totalsJson.data ?? []) {
-      totalsMap[item.name] = item.values?.[0]?.value ?? 0
+      // metric_type=total_value returns total_value.value, not values[]
+      totalsMap[item.name] = item.total_value?.value ?? item.values?.[0]?.value ?? 0
     }
 
     // 4. Recent 9 posts
