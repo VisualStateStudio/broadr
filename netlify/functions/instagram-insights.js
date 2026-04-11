@@ -51,7 +51,7 @@ exports.handler = async (event) => {
       `https://graph.facebook.com/v19.0/${igId}/insights` +
       `?metric=profile_views,accounts_engaged,total_interactions` +
       `&metric_type=total_value` +
-      `&period=total_over_range` +
+      `&period=lifetime` +
       `&since=${since}&until=${until}` +
       `&access_token=${token}`
     )
