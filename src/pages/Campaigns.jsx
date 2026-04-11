@@ -4,6 +4,7 @@ import { Plus, X, Search } from 'lucide-react'
 import Badge from '../components/ui/Badge.jsx'
 import { fetchCampaigns, fetchClients, insertCampaign, updateCampaign, deleteCampaign } from '../services/supabaseApi.js'
 import { Field, inputStyle, focusOrange, blurGrey } from '../components/ui/FormField.jsx'
+import { useTextScramble } from '../hooks/useTextScramble.js'
 
 const PLATFORMS   = ['meta', 'google', 'both']
 const STATUSES    = ['draft', 'active', 'paused', 'completed']
@@ -29,6 +30,7 @@ export default function Campaigns() {
   const [error,     setError]     = useState(null)
 
   const agency = useMemo(() => clients.find(c => c.is_agency), [clients])
+  const titleRef = useTextScramble({ trigger: 'mount' })
 
   useEffect(() => {
     async function load() {
@@ -126,22 +128,15 @@ export default function Campaigns() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 ref={titleRef} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0A0A0A', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            <span style={{ color: '#FF5C00', fontSize: '0.5rem', marginRight: '0.75rem', verticalAlign: 'middle' }}>&#9632;</span>
             Campaigns
           </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '4px 0 0' }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 400, color: '#6B7280', margin: '4px 0 0' }}>
             {campaigns.length} total · {campaigns.filter(c => c.status === 'active').length} active
           </p>
         </div>
-        <button onClick={openNew} style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
-          borderRadius: 10, border: 'none', background: '#FF5C00', color: '#fff',
-          cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-          fontWeight: 500, transition: 'background 150ms ease',
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = '#E04E00'}
-          onMouseLeave={e => e.currentTarget.style.background = '#FF5C00'}
-        >
+        <button onClick={openNew} className="btn-primary">
           <Plus size={15} strokeWidth={2.5} />
           New Campaign
         </button>
@@ -185,9 +180,9 @@ export default function Campaigns() {
             <motion.div key={c.id} className="glass-1"
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
+              style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', borderBottom: '1px solid #F0F0F0', transition: 'background-color 150ms ease' }}
               onClick={() => openEdit(c)}
-              whileHover={{ y: -1 }}
+              whileHover={{ y: -1, backgroundColor: '#FAFAFA' }}
             >
               {/* Platform */}
               <div style={{ width: 44, height: 44, borderRadius: 10, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -324,28 +319,14 @@ export default function Campaigns() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                <button onClick={() => setShowForm(false)} style={{
-                  flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #E5E7EB',
-                  background: '#fff', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.875rem', fontWeight: 500, color: '#374151',
-                }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} style={{
-                  flex: 2, padding: '10px', borderRadius: 10, border: 'none',
-                  background: saving ? '#FFAD8A' : '#FF5C00', cursor: saving ? 'default' : 'pointer',
-                  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-                  color: '#fff', transition: 'background 150ms ease',
-                }}>
+                <button onClick={() => setShowForm(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
                   {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Campaign'}
                 </button>
               </div>
 
               {editing && (
-                <button onClick={() => handleDelete(editing.id)} style={{
-                  width: '100%', marginTop: 10, padding: '9px', borderRadius: 10,
-                  border: '1px solid rgba(220,38,38,0.2)', background: '#FEE2E2',
-                  cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-                  fontWeight: 500, color: '#DC2626',
-                }}>Delete Campaign</button>
+                <button onClick={() => handleDelete(editing.id)} className="btn-danger" style={{ marginTop: 10 }}>Delete Campaign</button>
               )}
             </motion.div>
           </>

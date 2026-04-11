@@ -13,10 +13,10 @@ export default function Badge({ label, variant }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '3px 8px', borderRadius: 6,
+      padding: '4px 10px', borderRadius: 4,
       background: v.bg, color: v.color,
-      fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem', fontWeight: 600,
-      letterSpacing: '0.04em', textTransform: 'uppercase',
+      fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem', fontWeight: 600,
+      letterSpacing: '0.06em', textTransform: 'uppercase',
     }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: v.dot, flexShrink: 0 }} />
       {label}

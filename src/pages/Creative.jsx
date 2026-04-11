@@ -6,6 +6,7 @@ import {
   deleteCreativeAsset, uploadCreativeFile, fetchAgencyClient, fetchCampaigns,
 } from '../services/supabaseApi.js'
 import { Field, inputStyle, focusOrange, blurGrey } from '../components/ui/FormField.jsx'
+import { useTextScramble } from '../hooks/useTextScramble.js'
 
 function TypeBadge({ type }) {
   const isVideo = type === 'video'
@@ -40,7 +41,7 @@ function AssetCard({ asset, onClick }) {
       onMouseLeave={() => setHovered(false)}
     >
       {/* Thumbnail */}
-      <div style={{ position: 'relative', aspectRatio: '4/3', background: isVideo ? '#111827' : '#F7F7F7', overflow: 'hidden' }}>
+      <div className="clip-cut" style={{ position: 'relative', aspectRatio: '4/3', background: isVideo ? '#111827' : '#F7F7F7', overflow: 'hidden' }}>
         {!isVideo && asset.file_url ? (
           <img
             src={asset.file_url}
@@ -107,6 +108,7 @@ function AssetCard({ asset, onClick }) {
 
 export default function Creative() {
   const fileInputRef = useRef(null)
+  const titleRef = useTextScramble({ trigger: 'mount' })
 
   const [agency,    setAgency]    = useState(null)
   const [assets,    setAssets]    = useState([])
@@ -225,10 +227,11 @@ export default function Creative() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 ref={titleRef} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0A0A0A', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            <span style={{ color: '#FF5C00', fontSize: '0.5rem', marginRight: '0.75rem', verticalAlign: 'middle' }}>&#9632;</span>
             Creative
           </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '4px 0 0' }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 400, color: '#6B7280', margin: '4px 0 0' }}>
             {photoCount} photo{photoCount !== 1 ? 's' : ''} · {videoCount} video{videoCount !== 1 ? 's' : ''}
           </p>
         </div>
@@ -244,16 +247,7 @@ export default function Creative() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
-              borderRadius: 10, border: 'none',
-              background: uploading ? '#FFAD8A' : '#FF5C00',
-              color: '#fff', cursor: uploading ? 'default' : 'pointer',
-              fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-              transition: 'background 150ms ease',
-            }}
-            onMouseEnter={e => { if (!uploading) e.currentTarget.style.background = '#E04E00' }}
-            onMouseLeave={e => { if (!uploading) e.currentTarget.style.background = '#FF5C00' }}
+            className="btn-primary"
           >
             <Upload size={15} strokeWidth={2.5} />
             {uploading ? 'Uploading…' : 'Upload'}
@@ -375,27 +369,13 @@ export default function Creative() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                <button onClick={() => setShowPanel(false)} style={{
-                  flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #E5E7EB',
-                  background: '#fff', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.875rem', fontWeight: 500, color: '#374151',
-                }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} style={{
-                  flex: 2, padding: '10px', borderRadius: 10, border: 'none',
-                  background: saving ? '#FFAD8A' : '#FF5C00', cursor: saving ? 'default' : 'pointer',
-                  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-                  color: '#fff', transition: 'background 150ms ease',
-                }}>
+                <button onClick={() => setShowPanel(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
 
-              <button onClick={handleDelete} style={{
-                width: '100%', marginTop: 10, padding: '9px', borderRadius: 10,
-                border: '1px solid rgba(220,38,38,0.2)', background: '#FEE2E2',
-                cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-                fontWeight: 500, color: '#DC2626',
-              }}>Delete Asset</button>
+              <button onClick={handleDelete} className="btn-danger" style={{ marginTop: 10 }}>Delete Asset</button>
             </motion.div>
           </>
         )}

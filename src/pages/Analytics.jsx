@@ -11,6 +11,8 @@ import {
 } from 'recharts'
 import KPICard from '../components/ui/KPICard.jsx'
 import { fetchAnalytics, fetchAgencyClient } from '../services/supabaseApi.js'
+import { useTextScramble } from '../hooks/useTextScramble.js'
+import { useStaggerReveal } from '../hooks/useStaggerReveal.js'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -89,8 +91,8 @@ function fmtShort(n) {
 const CustomTooltip = ({ active, payload, label, prefix = '', suffix = '', decimals = 0 }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '10px 14px', boxShadow: '0 4px 12px rgba(0,0,0,0.10)' }}>
-      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', color: '#9CA3AF', marginBottom: 6 }}>{label}</div>
+    <div style={{ background: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: 12, padding: '10px 14px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontFamily: "'JetBrains Mono', monospace" }}>
+      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#9CA3AF', marginBottom: 6 }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color }} />
@@ -120,15 +122,8 @@ function SyncBar({ syncing, msg, onSync, label = 'Sync' }) {
           {msg}
         </span>
       )}
-      <button onClick={onSync} disabled={syncing} style={{
-        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
-        borderRadius: 9, border: '1px solid #E5E7EB', background: '#fff',
-        cursor: syncing ? 'default' : 'pointer',
-        fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', fontWeight: 500,
-        color: syncing ? '#9CA3AF' : '#374151', transition: 'all 150ms ease',
-      }}
-        onMouseEnter={e => { if (!syncing) e.currentTarget.style.borderColor = '#FF5C00' }}
-        onMouseLeave={e => { if (!syncing) e.currentTarget.style.borderColor = '#E5E7EB' }}
+      <button onClick={onSync} disabled={syncing} className="btn-outline btn-sm"
+        style={{ color: syncing ? '#9CA3AF' : undefined, borderColor: syncing ? '#E5E7EB' : undefined }}
       >
         <RefreshCw size={13} strokeWidth={2} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
         {syncing ? 'Syncing…' : label}
@@ -143,12 +138,7 @@ function NoDataState({ onSync, syncing }) {
       <BarChart2 size={32} style={{ color: '#E5E7EB', margin: '0 auto 12px', display: 'block' }} strokeWidth={1.5} />
       <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#374151', margin: '0 0 6px' }}>No data yet</p>
       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '0 0 20px' }}>Hit Sync to pull your latest data</p>
-      <button onClick={onSync} disabled={syncing} style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 18px',
-        borderRadius: 10, border: 'none', background: '#FF5C00', color: '#fff',
-        cursor: syncing ? 'default' : 'pointer',
-        fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500,
-      }}>
+      <button onClick={onSync} disabled={syncing} className="btn-primary">
         <RefreshCw size={14} strokeWidth={2} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
         {syncing ? 'Syncing…' : 'Sync Now'}
       </button>
@@ -163,6 +153,7 @@ function AdsTab({ agency, range }) {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
+  const adsStaggerRef = useStaggerReveal('.glass-1', { y: 20, stagger: 0.06, duration: 0.4 })
 
   useEffect(() => {
     if (!agency?.id) return
@@ -232,7 +223,7 @@ function AdsTab({ agency, range }) {
   }, [range, agency])
 
   return (
-    <motion.div className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div ref={adsStaggerRef} className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
       <KPICard title="Total Spend"   value={loading ? undefined : totals.spend}       prefix="$"  decimals={0} icon={DollarSign}       accentColor="#FF5C00" loading={loading} colSpan={3} />
       <KPICard title="Avg ROAS"      value={loading ? undefined : totals.roas}         suffix="x"  decimals={2} icon={TrendingUp}        accentColor="#0EA5E9" loading={loading} colSpan={3} />
       <KPICard title="Conversions"   value={loading ? undefined : totals.conversions}              decimals={0} icon={MousePointerClick} accentColor="#8B5CF6" loading={loading} colSpan={3} />
@@ -246,23 +237,23 @@ function AdsTab({ agency, range }) {
       {/* Spend over time */}
       <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 8', padding: 24 }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Spend Over Time</h2>
+          <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Spend Over Time</h2>
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Daily ad spend — last {range} days</span>
         </div>
         {!hasData ? <EmptyChart height={200} /> : (
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={dailySeries} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="ads-spendGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#FF5C00" stopOpacity={0.18} />
                   <stop offset="95%" stopColor="#FF5C00" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-              <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <XAxis dataKey="dateLabel" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={v => `$${fmtShort(v)}`} width={52} />
               <Tooltip content={<CustomTooltip prefix="$" decimals={0} />} />
-              <Area type="monotone" dataKey="spend" stroke="#FF5C00" strokeWidth={2} fill="url(#spendGrad)" dot={false} activeDot={{ r: 4, fill: '#FF5C00' }} />
+              <Area type="monotone" dataKey="spend" stroke="#FF5C00" strokeWidth={2} fill="url(#ads-spendGrad)" dot={false} activeDot={{ r: 4, fill: '#FF5C00' }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -271,7 +262,7 @@ function AdsTab({ agency, range }) {
       {/* Platform split */}
       <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 4', padding: 24 }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Platform Split</h2>
+          <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Platform Split</h2>
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Spend by platform</span>
         </div>
         {!hasData || platformData.length === 0 ? <EmptyChart height={200} /> : (
@@ -283,7 +274,7 @@ function AdsTab({ agency, range }) {
                     <Cell key={i} fill={PLATFORM_COLORS[entry.name] ?? '#9CA3AF'} />
                   ))}
                 </Pie>
-                <Tooltip formatter={v => [`$${fmt(v)}`, 'Spend']} contentStyle={{ fontFamily: "'Inter', sans-serif", fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB' }} />
+                <Tooltip formatter={v => [`$${fmt(v)}`, 'Spend']} contentStyle={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, borderRadius: 12, border: '1px solid #E5E5E5', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
@@ -304,14 +295,14 @@ function AdsTab({ agency, range }) {
       {/* ROAS trend */}
       <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 6', padding: 24 }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>ROAS Trend</h2>
+          <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>ROAS Trend</h2>
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Return on ad spend over time</span>
         </div>
         {!hasData ? <EmptyChart height={180} /> : (
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={dailySeries} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-              <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <XAxis dataKey="dateLabel" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}x`} width={40} />
               <Tooltip content={<CustomTooltip suffix="x" decimals={2} />} />
               <Line type="monotone" dataKey={() => 1} stroke="#E5E7EB" strokeWidth={1} strokeDasharray="4 4" dot={false} legendType="none" />
@@ -324,17 +315,17 @@ function AdsTab({ agency, range }) {
       {/* Conversions */}
       <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 6', padding: 24 }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Conversions</h2>
+          <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Conversions</h2>
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Daily conversions over time</span>
         </div>
         {!hasData ? <EmptyChart height={180} /> : (
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={dailySeries} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barSize={range <= 7 ? 24 : range <= 30 ? 14 : 6}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-              <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+              <XAxis dataKey="dateLabel" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} width={36} />
               <Tooltip content={<CustomTooltip decimals={0} />} />
-              <Bar dataKey="conversions" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="conversions" fill="#0A0A0A" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -374,6 +365,7 @@ function InstagramTab({ range }) {
   const [syncing, setSyncing] = useState(false)
   const [msg,     setMsg]     = useState('')
   const prevRange             = useRef(range)
+  const igStaggerRef = useStaggerReveal('.glass-1', { y: 20, stagger: 0.06, duration: 0.4 })
 
   // When range changes: load from cache for the new range, or clear to show NoDataState
   useEffect(() => {
@@ -431,7 +423,7 @@ function InstagramTab({ range }) {
   const hasData = !!data
 
   return (
-    <motion.div className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div ref={igStaggerRef} className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
       <KPICard title="Followers"     value={hasData ? data.followers    : undefined} decimals={0} icon={Users}      accentColor="#E1306C" loading={false} colSpan={3} />
       <KPICard title="Reach"         value={hasData ? data.reach        : undefined} decimals={0} icon={Eye}        accentColor="#FF5C00" loading={false} colSpan={3} />
       <KPICard title="Interactions"  value={hasData ? data.interactions : undefined} decimals={0} icon={Heart}      accentColor="#8B5CF6" loading={false} colSpan={3} />
@@ -447,7 +439,7 @@ function InstagramTab({ range }) {
           {/* Reach chart */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 8', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Reach & Impressions</h2>
+              <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Reach & Impressions</h2>
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Daily — last {range} days</span>
             </div>
             {dailySeries.length === 0 ? <EmptyChart height={200} /> : (
@@ -460,7 +452,7 @@ function InstagramTab({ range }) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmtShort} width={48} />
                   <Tooltip content={<CustomTooltip decimals={0} />} />
                   <Line type="monotone" dataKey="reach"           stroke="#E1306C" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Reach" />
@@ -481,7 +473,7 @@ function InstagramTab({ range }) {
           {/* Profile views stat panel */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 4', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Profile Views</h2>
+              <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Profile Views</h2>
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Total — last {range} days</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 170 }}>
@@ -543,7 +535,7 @@ function InstagramTab({ range }) {
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 12', padding: 24 }}>
             {/* Card header with title + type breakdown pills */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>Recent Posts</h2>
+              <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>Recent Posts</h2>
               {data.posts?.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {Object.entries(postStats.typeCounts).map(([type, count]) => {
@@ -573,8 +565,8 @@ function InstagramTab({ range }) {
                       {['Post', 'Type', 'Likes', 'Comments', 'Saves', 'Reach'].map(h => (
                         <th key={h} style={{
                           padding: '0 12px 10px', textAlign: h === 'Post' ? 'left' : 'right',
-                          fontFamily: "'Inter', sans-serif", fontSize: '0.6875rem', fontWeight: 600,
-                          color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em',
+                          fontFamily: "'Inter', sans-serif", fontSize: '0.75rem', fontWeight: 500,
+                          color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em',
                           whiteSpace: 'nowrap',
                         }}>{h}</th>
                       ))}
@@ -586,7 +578,10 @@ function InstagramTab({ range }) {
                       const reachCol = isVideo && post.videoViews > 0 ? post.videoViews : post.impressions
                       const reachLabel = isVideo && post.videoViews > 0 ? 'Views' : 'Impr.'
                       return (
-                        <tr key={post.id} style={{ borderBottom: i < data.posts.length - 1 ? '1px solid #F9F9F9' : 'none' }}>
+                        <tr key={post.id} style={{ borderBottom: '1px solid #F0F0F0', cursor: 'pointer', transition: 'background-color 150ms ease' }}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAFAFA'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
                           {/* Thumbnail + caption */}
                           <td style={{ padding: '10px 12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -648,6 +643,7 @@ function FacebookTab({ range }) {
   const [syncing, setSyncing] = useState(false)
   const [msg,     setMsg]     = useState('')
   const prevRange             = useRef(range)
+  const fbStaggerRef = useStaggerReveal('.glass-1', { y: 20, stagger: 0.06, duration: 0.4 })
 
   // When range changes: load from cache for the new range, or clear to show NoDataState
   useEffect(() => {
@@ -685,7 +681,7 @@ function FacebookTab({ range }) {
   const hasData = !!data
 
   return (
-    <motion.div className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div ref={fbStaggerRef} className="bento-grid" variants={containerVariants} initial="hidden" animate="visible">
       <KPICard title="Page Likes"    value={hasData ? data.pageLikes   : undefined} decimals={0} icon={Heart}          accentColor="#1877F2" loading={false} colSpan={3} />
       <KPICard title="Reach"         value={hasData ? data.reach        : undefined} decimals={0} icon={Eye}            accentColor="#FF5C00" loading={false} colSpan={3} />
       <KPICard title="Impressions"   value={hasData ? data.impressions  : undefined} decimals={0} icon={TrendingUp}     accentColor="#8B5CF6" loading={false} colSpan={3} />
@@ -701,7 +697,7 @@ function FacebookTab({ range }) {
           {/* Daily reach chart */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 8', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Reach & Engaged Users</h2>
+              <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>Reach & Engaged Users</h2>
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Daily — last {range} days</span>
             </div>
             {dailySeries.length === 0 ? <EmptyChart height={200} /> : (
@@ -718,7 +714,7 @@ function FacebookTab({ range }) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={fmtShort} width={48} />
                   <Tooltip content={<CustomTooltip decimals={0} />} />
                   <Area type="monotone" dataKey="reach"   stroke="#1877F2" strokeWidth={2} fill="url(#fbReachGrad)"   dot={false} activeDot={{ r: 4 }} name="Reach" />
@@ -739,14 +735,14 @@ function FacebookTab({ range }) {
           {/* New fans */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 4', padding: 24 }}>
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>New Page Likes</h2>
+              <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 2px' }}>New Page Likes</h2>
               <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#9CA3AF' }}>Daily — last {range} days</span>
             </div>
             {dailySeries.length === 0 ? <EmptyChart height={200} /> : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={dailySeries} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barSize={range <= 7 ? 20 : range <= 30 ? 12 : 5}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
-                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'Inter', sans-serif", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <XAxis dataKey="dateLabel" tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} width={32} />
                   <Tooltip content={<CustomTooltip decimals={0} />} />
                   <Bar dataKey="page_fan_adds_unique" fill="#1877F2" radius={[4, 4, 0, 0]} name="New Likes" />
@@ -757,7 +753,7 @@ function FacebookTab({ range }) {
 
           {/* Recent posts */}
           <motion.div className="glass-1" variants={cardVariants} style={{ gridColumn: 'span 12', padding: 24 }}>
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 20px' }}>Recent Posts</h2>
+            <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 20px' }}>Recent Posts</h2>
             {data.posts?.length === 0 ? (
               <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', textAlign: 'center', padding: '24px 0' }}>No posts found</p>
             ) : (
@@ -765,9 +761,12 @@ function FacebookTab({ range }) {
                 {data.posts.map(post => (
                   <div key={post.id} style={{
                     display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '12px 16px', borderRadius: 10,
-                    background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.05)',
-                  }}>
+                    padding: '12px 16px', borderBottom: '1px solid #F0F0F0',
+                    cursor: 'pointer', transition: 'background-color 150ms ease',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAFAFA'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
                     {post.image && (
                       <img src={post.image} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none' }} />
                     )}
@@ -838,6 +837,7 @@ function WebsiteTab() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function Analytics() {
+  const titleRef = useTextScramble({ trigger: 'mount' })
   const [agency,       setAgency]       = useState(null)
   const [activeTab,    setActiveTab]    = useState('ads')
   const [tabDirection, setTabDirection] = useState(1)
@@ -860,10 +860,11 @@ export default function Analytics() {
       <div style={{ padding: '28px 28px 0', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>
+            <h1 ref={titleRef} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0A0A0A', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              <span style={{ color: '#FF5C00', fontSize: '0.5rem', marginRight: '0.75rem', verticalAlign: 'middle' }}>&#9632;</span>
               Analytics
             </h1>
-            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '4px 0 0' }}>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 400, color: '#6B7280', margin: '4px 0 0' }}>
               {agency?.name ?? ''}
             </p>
           </div>

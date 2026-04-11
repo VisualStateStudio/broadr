@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Search, Globe, Building2, AtSign, Mail, DollarSign } from 'lucide-react'
 import { fetchClients, insertClient, updateClient, deleteClient } from '../services/supabaseApi.js'
 import { Field, inputStyle, focusOrange, blurGrey } from '../components/ui/FormField.jsx'
+import { useTextScramble } from '../hooks/useTextScramble.js'
 
 const INDUSTRIES = [
   'Content & Marketing', 'E-commerce', 'Real Estate', 'Hospitality & Food',
@@ -64,6 +65,7 @@ function InfoRow({ icon: Icon, value, href }) {
 }
 
 export default function Clients() {
+  const titleRef = useTextScramble({ trigger: 'mount' })
   const [clients,  setClients]  = useState([])
   const [loading,  setLoading]  = useState(true)
   const [search,   setSearch]   = useState('')
@@ -160,20 +162,15 @@ export default function Clients() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em' }}>Clients</h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#9CA3AF', margin: '4px 0 0' }}>
+          <h1 ref={titleRef} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: '#0A0A0A', margin: 0, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            <span style={{ color: '#FF5C00', fontSize: '0.5rem', marginRight: '0.75rem', verticalAlign: 'middle' }}>&#9632;</span>
+            Clients
+          </h1>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 400, color: '#6B7280', margin: '4px 0 0' }}>
             {clients.length} client{clients.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button onClick={openNew} style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
-          borderRadius: 10, border: 'none', background: '#FF5C00', color: '#fff',
-          cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-          fontWeight: 500, transition: 'background 150ms ease',
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = '#E04E00'}
-          onMouseLeave={e => e.currentTarget.style.background = '#FF5C00'}
-        >
+        <button onClick={openNew} className="btn-primary">
           <Plus size={15} strokeWidth={2.5} />
           Add Client
         </button>
@@ -337,28 +334,14 @@ export default function Clients() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                <button onClick={() => setShowForm(false)} style={{
-                  flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #E5E7EB',
-                  background: '#fff', cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                  fontSize: '0.875rem', fontWeight: 500, color: '#374151',
-                }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} style={{
-                  flex: 2, padding: '10px', borderRadius: 10, border: 'none',
-                  background: saving ? '#FFAD8A' : '#FF5C00', cursor: saving ? 'default' : 'pointer',
-                  fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 500, color: '#fff',
-                  transition: 'background 150ms ease',
-                }}>
+                <button onClick={() => setShowForm(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
                   {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Client'}
                 </button>
               </div>
 
               {editing && !editing.is_agency && (
-                <button onClick={() => handleDelete(editing.id)} style={{
-                  width: '100%', marginTop: 10, padding: '9px', borderRadius: 10,
-                  border: '1px solid rgba(220,38,38,0.2)', background: '#FEE2E2',
-                  cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '0.875rem',
-                  fontWeight: 500, color: '#DC2626',
-                }}>Delete Client</button>
+                <button onClick={() => handleDelete(editing.id)} className="btn-danger" style={{ marginTop: 10 }}>Delete Client</button>
               )}
             </motion.div>
           </>

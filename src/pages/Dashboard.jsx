@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { DollarSign, TrendingUp, Zap, BarChart2, ChevronDown } from 'lucide-react'
 import KPICard from '../components/ui/KPICard.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { fetchDashboardKPIs, fetchCampaigns, fetchClients } from '../services/supabaseApi.js'
+import { useTextScramble } from '../hooks/useTextScramble.js'
+import { useStaggerReveal } from '../hooks/useStaggerReveal.js'
 
 const containerVariants = {
   hidden: {},
@@ -54,6 +57,8 @@ export default function Dashboard() {
   }, [selectedClientId])
 
   const selectedClient = clients.find(c => c.id === selectedClientId)
+  const titleRef = useTextScramble({ trigger: 'mount' })
+  const staggerRef = useStaggerReveal('.glass-1', { y: 20, stagger: 0.06, duration: 0.4 })
 
   const activeCampaigns = campaigns.filter(c => c.status === 'active')
   const recentCampaigns = campaigns.slice(0, 6)
@@ -63,13 +68,15 @@ export default function Dashboard() {
       {/* Header */}
       <div style={{ padding: '28px 28px 0', marginBottom: 4, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{
+          <h1 ref={titleRef} style={{
             fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem',
-            fontWeight: 700, color: '#0F1117', margin: 0, letterSpacing: '-0.02em',
+            fontWeight: 700, color: '#0A0A0A', margin: 0, letterSpacing: '0.05em',
+            textTransform: 'uppercase',
           }}>
+            <span style={{ color: '#FF5C00', fontSize: '0.5rem', marginRight: '0.75rem', verticalAlign: 'middle' }}>&#9632;</span>
             {selectedClient?.name ?? 'Dashboard'}
           </h1>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', color: '#6B7280', margin: '4px 0 0' }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.875rem', fontWeight: 400, color: '#6B7280', margin: '4px 0 0' }}>
             {new Date().toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
@@ -103,6 +110,7 @@ export default function Dashboard() {
 
       {/* Bento grid */}
       <motion.div
+        ref={staggerRef}
         className="bento-grid"
         variants={containerVariants}
         initial="hidden"
@@ -155,12 +163,12 @@ export default function Dashboard() {
           style={{ gridColumn: 'span 8', padding: 24 }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>
+            <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>
               Campaigns
             </h2>
-            <a href="/campaigns" style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#FF5C00', textDecoration: 'none', fontWeight: 500 }}>
+            <Link to="/campaigns" style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#FF5C00', textDecoration: 'none', fontWeight: 500 }}>
               View all →
-            </a>
+            </Link>
           </div>
 
           {loading ? (
@@ -176,13 +184,12 @@ export default function Dashboard() {
               {recentCampaigns.map(c => (
                 <div key={c.id} style={{
                   display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 14px', borderRadius: 10,
-                  background: 'rgba(255,255,255,0.5)',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  cursor: 'pointer', transition: 'background 150ms ease',
+                  padding: '10px 14px', borderRadius: 0,
+                  borderBottom: '1px solid #F0F0F0',
+                  cursor: 'pointer', transition: 'background-color 150ms ease',
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.85)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.5)'}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAFAFA'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <PlatformIcon platform={c.platform} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -213,7 +220,7 @@ export default function Dashboard() {
           variants={cardVariants}
           style={{ gridColumn: 'span 4', padding: 24 }}
         >
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 20px' }}>
+          <h2 className="indicator-square-dark" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 600, color: '#0F1117', margin: '0 0 20px' }}>
             Overview
           </h2>
 

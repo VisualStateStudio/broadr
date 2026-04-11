@@ -9,14 +9,22 @@
 ══════════════════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; }
+* { -webkit-text-rendering: optimizeSpeed; text-rendering: optimizeSpeed; font-kerning: none; }
 
-html { font-size: 16px; }
+html {
+  font-size: 16px;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar { display: none; }
 
 body {
   margin: 0;
-  background-color: #F7F7F7;
+  background-color: #F5F5F5;
+  background-image: radial-gradient(ellipse at 85% 15%, rgba(255, 92, 0, 0.03) 0%, transparent 60%);
+  background-attachment: fixed;
   font-family: 'Inter', system-ui, sans-serif;
-  color: #0F1117;
+  color: #0A0A0A;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -28,24 +36,33 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
+   LENIS SMOOTH SCROLL
+══════════════════════════════════════════════════════ */
+
+.lenis-smooth { scroll-behavior: auto; }
+.lenis-stopped { overflow: hidden; }
+
+/* ══════════════════════════════════════════════════════
    CARD SYSTEM
 ══════════════════════════════════════════════════════ */
 
 /* Tier 1 — Primary bento cards */
 .glass-1 {
   background: #FFFFFF;
-  border: 1px solid #EBEBEB;
-  border-radius: 16px;
+  border: 1px solid #E5E5E5;
+  border-top: 2px solid #FF5C00;
+  border-radius: 12px;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.04),
     0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 
 /* Tier 2 — Nested containers */
 .glass-2 {
   background: #FAFAFA;
   border: 1px solid #F0F0F0;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -53,7 +70,7 @@ body {
 .glass-3 {
   background: #FFFFFF;
   border: 1px solid #E5E5E5;
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.04),
     0 12px 32px rgba(0, 0, 0, 0.10),
@@ -79,6 +96,142 @@ body {
 
 .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; }
 .font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+/* ══════════════════════════════════════════════════════
+   UTILITY CLASSES
+══════════════════════════════════════════════════════ */
+
+.indicator-square::before {
+  content: '\25A0';
+  color: #FF5C00;
+  font-size: 0.5rem;
+  margin-right: 0.75rem;
+  vertical-align: middle;
+}
+
+.indicator-square-dark::before {
+  content: '\25A0';
+  color: #0A0A0A;
+  font-size: 0.5rem;
+  margin-right: 0.75rem;
+  vertical-align: middle;
+}
+
+.clip-cut {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.75rem), calc(100% - 0.75rem) 100%, 0 100%);
+}
+
+/* ══════════════════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════════════════ */
+
+.btn-primary {
+  background-color: #FF5C00;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 92, 0, 0.25);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  background-color: #FFAD8A;
+  cursor: default;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #FF5C00;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 10px 20px;
+  border: 1.5px solid #FF5C00;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-outline:hover {
+  background-color: #FF5C00;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 92, 0, 0.25);
+}
+.btn-outline:active {
+  transform: translateY(0);
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+}
+
+.btn-danger {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 10px 20px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+  width: 100%;
+}
+.btn-danger:hover {
+  background-color: #FCD5D5;
+  transform: translateY(-1px);
+}
+.btn-danger:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background-color: #fff;
+  color: #374151;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 10px 20px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+.btn-secondary:hover {
+  border-color: #FF5C00;
+  transform: translateY(-1px);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+}
 
 /* ══════════════════════════════════════════════════════
    ANIMATIONS
@@ -107,6 +260,23 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
+   FOCUS STATES
+══════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid #FF5C00;
+  outline-offset: 2px;
+}
+
+/* Inputs/textareas get their own focus treatment via inline styles;
+   prevent double-ring by resetting the generic outline on them. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
+/* ══════════════════════════════════════════════════════
    REDUCED MOTION
 ══════════════════════════════════════════════════════ */
 
@@ -115,5 +285,7 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+  .lenis-smooth { scroll-behavior: auto !important; }
 }
