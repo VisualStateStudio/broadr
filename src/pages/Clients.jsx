@@ -255,11 +255,21 @@ export default function Clients() {
               style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.35)', zIndex: 40 }}
               onClick={() => setShowForm(false)} />
             <motion.div className="glass-3"
+              data-lenis-prevent
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 380, damping: 38 }}
-              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 440, zIndex: 50, padding: 28, overflowY: 'auto' }}
+              style={{
+                position: 'fixed', top: 0, right: 0, bottom: 0, width: 440, zIndex: 50,
+                display: 'flex', flexDirection: 'column',
+              }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              {/* HEADER — pinned */}
+              <div style={{
+                padding: '24px 28px 16px',
+                borderBottom: '1px solid #F0F0F0',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexShrink: 0,
+              }}>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.125rem', fontWeight: 600, color: '#0F1117', margin: 0 }}>
                   {editing ? 'Edit Client' : 'New Client'}
                 </h2>
@@ -268,6 +278,8 @@ export default function Clients() {
                 </button>
               </div>
 
+              {/* BODY — scrolls */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
               {error && (
                 <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 8, background: '#FEE2E2', border: '1px solid rgba(220,38,38,0.2)', fontFamily: "'Inter', sans-serif", fontSize: '0.8125rem', color: '#DC2626' }}>
                   {error}
@@ -332,17 +344,25 @@ export default function Clients() {
                     onFocus={focusOrange} onBlur={blurGrey} />
                 </Field>
               </div>
-
-              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                <button onClick={() => setShowForm(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
-                  {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Client'}
-                </button>
               </div>
 
-              {editing && !editing.is_agency && (
-                <button onClick={() => handleDelete(editing.id)} className="btn-danger" style={{ marginTop: 10 }}>Delete Client</button>
-              )}
+              {/* FOOTER — pinned */}
+              <div style={{
+                padding: '16px 28px 20px',
+                borderTop: '1px solid #F0F0F0',
+                flexShrink: 0,
+                display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={() => setShowForm(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                  <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
+                    {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Client'}
+                  </button>
+                </div>
+                {editing && !editing.is_agency && (
+                  <button onClick={() => handleDelete(editing.id)} className="btn-danger">Delete Client</button>
+                )}
+              </div>
             </motion.div>
           </>
         )}
